@@ -1,0 +1,7 @@
+[
+  { "name": "Eating / meals", "url": "/emojis/eat.png" },
+  { "name": "Study / reading / learning / coding", "url": "/emojis/study.png" },
+  { "name": "Gaming / entertainment / anime / web series", "url": "/emojis/game.png" },
+  { "name": "Exercise / gym / walking / general activity", "url": "/emojis/walk.png", "default": true },
+  { "name": "Sleep / rest", "url": "/emojis/sleep.png" }
+]
