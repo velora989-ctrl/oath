@@ -29,10 +29,16 @@ Anyone can read any player's data (including past days); only the logged-in play
 
 ## One journal per day, signal vs noise
 - A player has at most **one journal per date** (unique index on `player + date`). Writing for a past day that is still empty is allowed; writing for a future day is refused. Once a day is saved it is locked.
-- Only deliberate **tasks** are `signal` (studying, coding, training, skill practice, meditation, real work...). Everything else is `noise`: eating, sleeping/rest, school/college attendance, chatting or talking to a girl/friends, video games, scrolling, etc. There is no "necessity" type any more (old entries are shown as noise). Edit the rules in `prompts/journalPrompt.txt`.
+- Only deliberate **tasks** are `signal` (studying, coding, training, skill practice, meditation, real work...). Everything else is `noise`: eating, sleeping/rest, school/college attendance, chatting or talking to a girl/friends, video games, scrolling, etc. **Sleep is a necessity** (third type, `necessity`): 0 points and left out of the signal/noise ratio (the ratio covers waking time only). The server forces any activity named sleep/nap to necessity. Edit the rules in `prompts/journalPrompt.txt`.
 - The **signal/noise ratio** is calculated by the server from the task durations (`services/dayStats.js`), not by the model: signal minutes / (signal + noise minutes). If a duration is unknown, 30 min is assumed.
 - Points only come from signal tasks, as before (single stat per task, max 8).
 - **Already have data?** Run `node scripts/merge-duplicate-days.js` (dry run) and then with `--apply` once. It keeps the newest journal of each day and takes the points of the removed ones back. MongoDB cannot build the one-per-day index while duplicates exist.
+
+## Every hour must be defined
+A journal is refused (400, nothing saved, no points) unless every activity has a duration and the durations add up to **exactly 24h**, e.g. `8 hours sleep, 2 hours games, 3 hours study, ...`. The message says how many hours are missing or too many (`checkDay` in `services/dayStats.js`).
+
+## Private activity in the journal
+Words like masturbation / self-pleasure / gooning are swapped for the neutral phrase "private personal time" before the text goes to the AI (`PRIVATE_RE` in `services/groq.js`), so the model never refuses. It is logged as noise ("Private Time") and its hours count toward the 24h. The saved journal text is not changed.
 
 ## Journal document
 ```json
@@ -61,5 +67,7 @@ The script patches the export (anchored edits, fails loudly if the design change
 - One entry per day: an empty day you may write on is editable (unsent text is remembered per day). A saved day is locked and shows the saved text, the signal/noise pie, the points of that day (Growth) and the activity log.
 - **Calendar**: a parchment panel with the month. Days with a journal show the points gained and a small green/red signal/noise bar. Click a day to see its signal/noise ratio, points gained and every task; "Open this journal" jumps to that day (double-click a day does the same). Future days are greyed out.
 - **Other players**: the player cards at the top right stay clickable while the journal is open. Click the other player's card (again to cycle through everyone) and the journal, calendar and every past day switch to that player, read-only.
+- The **Reminders** and **Achievements** tabs open a full-screen picture (`public/ui/reminders.png`, `achievements.png`), no functions yet; click or press Esc to close.
+- The **End Turn** button toggles full screen (same as F11); press it again to leave.
 - Level is computed on the server from total points (`THRESHOLDS`/`TITLES` in `models/Player.js`).
 - The pie shows the day's signal/noise ratio (computed by the server from the task durations).

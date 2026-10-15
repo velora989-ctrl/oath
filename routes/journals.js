@@ -5,7 +5,7 @@ const auth = require('../middleware/auth');
 const Journal = require('../models/Journal');
 const Player = require('../models/Player');
 const { analyzeJournal } = require('../services/groq');
-const { STATS, computeDay, journalView, isRealDate, isFutureDate, todayUTC } = require('../services/dayStats');
+const { STATS, computeDay, checkDay, journalView, isRealDate, isFutureDate, todayUTC } = require('../services/dayStats');
 
 const router = express.Router();
 
@@ -49,6 +49,10 @@ router.post('/', auth, analyzeLimiter, async (req, res, next) => {
       const detail = process.env.NODE_ENV === 'production' ? '' : ` (${err.message.slice(0, 160)})`;
       return res.status(502).json({ error: `Could not analyse your journal right now.${detail}` });
     }
+
+    // every hour of the day must be defined: durations have to add up to exactly 24h
+    const problem = checkDay(analysis.tasks);
+    if (problem) return res.status(400).json({ error: problem });
 
     let journal;
     try {

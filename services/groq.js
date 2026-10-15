@@ -11,6 +11,17 @@ const MAX_POINTS_PER_TASK = 8;
 const emojiUrls = new Set(emojis.map((e) => e.url));
 const defaultEmoji = (emojis.find((e) => e.default) || emojis[0]).url;
 
+// ---------- private-activity handling ----------
+// Some models refuse or error out when a journal mentions sexual self-pleasure. It is a normal part of
+// a day, so the words are swapped for a neutral phrase BEFORE the text goes to the model. The saved
+// journal text stays exactly as the player wrote it; only the AI sees the neutral wording.
+const PRIVATE_RE = /\b(masturbat\w*|self[\s-]*pleasur\w*|self[\s-]*gratif\w*|jerk(?:ing|ed)?\s+off|jack(?:ing|ed)?\s+off|wank\w*|fap+(?:ing|ped)?|goon(?:ing|ed|er|s)?|porn\w*)\b/gi;
+const PRIVATE_PHRASE = 'private personal time';
+const toModelText = (text) => text.replace(PRIVATE_RE, PRIVATE_PHRASE);
+
+// Sleep is a necessity, whatever the model says.
+const SLEEP_RE = /\b(sleep|sleeping|slept|nap|napping)\b/i;
+
 // ---------- prompt building ----------
 
 function emojiCatalogueText() {
@@ -113,8 +124,11 @@ function parseJson(text) {
 const zeroPoints = () => ({ int: 0, end: 0, str: 0, arc: 0, wis: 0 });
 
 function sanitizeTask(raw) {
-  // Only real tasks are signal. Anything else the model returns (noise, necessity, junk) is noise.
-  const type = String(raw?.type).toLowerCase() === 'signal' ? 'signal' : 'noise';
+  // signal = a real task, necessity = sleep, anything else (noise, junk) = noise.
+  const name = String(raw?.name || 'Untitled activity').trim().slice(0, 60);
+  let type = String(raw?.type).toLowerCase();
+  type = type === 'signal' ? 'signal' : type === 'necessity' ? 'necessity' : 'noise';
+  if (SLEEP_RE.test(name)) type = 'necessity';
   const points = zeroPoints();
 
   if (type === 'signal') {
@@ -129,7 +143,7 @@ function sanitizeTask(raw) {
 
   return {
     emoji: emojiUrls.has(raw?.emoji) ? raw.emoji : defaultEmoji,
-    name: String(raw?.name || 'Untitled activity').trim().slice(0, 60),
+    name,
     type,
     duration: String(raw?.duration || 'unknown').trim().slice(0, 30),
     points,
@@ -146,7 +160,7 @@ function sanitize(parsed) {
 
 async function analyzeJournal(journalText, playerId) {
   const systemPrompt = await buildSystemPrompt(playerId);
-  const raw = await callGroq(systemPrompt, journalText);
+  const raw = await callGroq(systemPrompt, toModelText(journalText));
   const result = sanitize(parseJson(raw));
   if (result.tasks.length === 0) throw new Error('Model returned no tasks');
   return result;

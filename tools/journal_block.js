@@ -3,9 +3,9 @@ const $j=s=>JP.querySelector(s),ta=$('#jta'),pad2=n=>String(n).padStart(2,'0');
 const SN={int:'INT',str:'STR',end:'END',arc:'ARC',wis:'WIS'};
 const escA=t=>String(t==null?'':t).replace(/[<>&"']/g,'');
 function dKey(){const i=document.querySelector('#jdate'),m=/^\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\s*$/.exec(i?i.value:DS)||/(\d{2})\/(\d{2})\/(\d{4})/.exec(DS);return m[3]+'-'+pad2(m[2])+'-'+pad2(m[1])}
-/* only two kinds of rows now: signal (a task) and noise (everything else) */
-function rowHTML(x){const sg=x.type==='signal',bk=sg?'signa':'noise',[bw,bh]=P[bk],pts=Object.keys(SN).filter(k=>x.points&&x.points[k]>0).map(k=>'+'+x.points[k]+' '+SN[k]).join(', ');
-return`<div class="jr" title="${escA(pts||(sg?'signal':'noise'))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn">${escA(x.name)}</span><img src="${IM[bk]}" alt="" style="left:${1036-785-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px"><span class="jt">${escA(x.duration)}</span></div>`}
+/* three kinds of rows: signal (a task), necessity (sleep, no bar) and noise (everything else) */
+function rowHTML(x){const sg=x.type==='signal',nc=x.type==='necessity',bk=sg?'signa':'noise',[bw,bh]=P[bk],pts=Object.keys(SN).filter(k=>x.points&&x.points[k]>0).map(k=>'+'+x.points[k]+' '+SN[k]).join(', ');
+return`<div class="jr" title="${escA(pts||(sg?'signal':nc?'necessity':'noise'))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn">${escA(x.name)}</span>${nc?'':`<img src="${IM[bk]}" alt="" style="left:${1036-785-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px">`}<span class="jt">${escA(x.duration)}</span></div>`}
 
 /* ---------- dates ---------- */
 const WK=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -95,10 +95,10 @@ function calSummary(){
  let h='';
  if(!e){h+='<p class="cnone">'+(k>todayKey()?"That day hasn't happened yet.":'No journal on this day.')+'</p>'}
  else{const s=Math.round(e.ratio*100),pts=Object.keys(SN).filter(x=>e.points[x]>0).map(x=>'<span>'+SN[x]+' +'+e.points[x]+'</span>').join('');
-  h+='<div class="csn"><div class="cbar"><i style="width:'+s+'%"></i></div><div class="cbl"><span>Signal '+s+'%</span><span>Noise '+(100-s)+'%</span></div><div class="cmn">'+fmtMin(e.signalMinutes)+' signal / '+fmtMin(e.noiseMinutes)+' noise</div></div>'+
+  h+='<div class="csn"><div class="cbar"><i style="width:'+s+'%"></i></div><div class="cbl"><span>Signal '+s+'%</span><span>Noise '+(100-s)+'%</span></div><div class="cmn">'+fmtMin(e.signalMinutes)+' signal / '+fmtMin(e.noiseMinutes)+' noise'+(e.necessityMinutes?' / '+fmtMin(e.necessityMinutes)+' sleep':'')+'</div></div>'+
    '<div class="cpt"><b>Points gained: +'+e.totalPoints+'</b>'+(pts?'<div>'+pts+'</div>':'')+'</div>'+
-   '<div class="ctl">'+e.tasks.map(t=>{const sg=t.type==='signal',p=Object.keys(SN).filter(x=>t.points&&t.points[x]>0).map(x=>' +'+t.points[x]+' '+SN[x]).join('');
-    return'<div class="ct '+(sg?'sg':'nz')+'"><img src="'+escA(t.emoji)+'" alt=""><span class="cn1">'+escA(t.name)+'</span><span class="cd">'+escA(t.duration)+'</span><span class="cb">'+(sg?'Signal'+escA(p):'Noise')+'</span></div>'}).join('')+'</div>'}
+   '<div class="ctl">'+e.tasks.map(t=>{const sg=t.type==='signal',nc=t.type==='necessity',p=Object.keys(SN).filter(x=>t.points&&t.points[x]>0).map(x=>' +'+t.points[x]+' '+SN[x]).join('');
+    return'<div class="ct '+(sg?'sg':nc?'nc':'nz')+'"><img src="'+escA(t.emoji)+'" alt=""><span class="cn1">'+escA(t.name)+'</span><span class="cd">'+escA(t.duration)+'</span><span class="cb">'+(sg?'Signal'+escA(p):nc?'Necessity':'Noise')+'</span></div>'}).join('')+'</div>'}
  if(k<=todayKey()&&(e||WHO.mine||WHO.id))h+='<button class="jnav" id="jco">'+(e?'Open this journal':(WHO.mine?'Write this day':'Open this day'))+'</button>';
  box.innerHTML=h;const b=$c('#jco');if(b)b.onclick=()=>{calClose();go(k)}}
 async function calLoad(){

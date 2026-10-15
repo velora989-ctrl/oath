@@ -80,6 +80,7 @@ router.get('/:id/calendar', async (req, res, next) => {
         ratio: v.signal_to_noise_ratio,
         signalMinutes: v.signalMinutes,
         noiseMinutes: v.noiseMinutes,
+        necessityMinutes: v.necessityMinutes,
         points: v.points,
         totalPoints: v.totalPoints,
         tasks: v.tasks,

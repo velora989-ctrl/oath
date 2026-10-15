@@ -42,6 +42,11 @@ s = sub1(r"const CH=\[\{n:'Mira'.*?\}\}\],FACE=\[",
          "let CH=[{id:null,n:'',lv:1,t:'Seedling'," + z + "},{id:null,n:'',lv:1,t:'Seedling'," + z + "}],FACE=[", s)
 s = lit1("else pg.style.display='flex'}", "else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", s)
 
+# 2b. Reminders / Achievements tabs show a static picture (public/ui/*.png) instead of the "Hi" page
+s = lit1("else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", "else if(k==='r'||k==='a')showImg(k);else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", s)
+s = lit1("window.act=function(k){", 'const ip=document.createElement(\'div\');ip.id=\'imgpg\';ip.innerHTML=\'<img alt="">\';document.body.appendChild(ip);const closeImg=()=>{ip.style.display=\'none\'};ip.onclick=closeImg;addEventListener(\'keydown\',e=>{if(e.key===\'Escape\')closeImg()});const showImg=k=>{const m=ip.firstChild;m.src=k===\'r\'?\'ui/reminders.png\':\'ui/achievements.png\';m.alt=k===\'r\'?\'Reminders\':\'Achievements\';ip.style.display=\'flex\'};\n' + "window.act=function(k){", s)
+s = lit1('</style></head>', '#imgpg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0b0d12;z-index:100;cursor:pointer}#imgpg img{max-width:100vw;max-height:100vh;width:auto;height:auto;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}\n' + '</style></head>', s)
+
 # 3. journal page: fake local state -> real data
 s = sub1(r"const BASE=.*?noi:BASE\.noi\+nz\}\}\n",
          "const fresh=()=>({ent:[],g:{int:0,str:0,end:0,arc:0,wis:0},ratio:.5});\nlet S=fresh();\n"
@@ -53,6 +58,10 @@ s = sub1(r"\$\('#jtest'\)\.onclick=[^\n]*\n", '', s)
 s = sub1(r"\$\('#jsave'\)\.onclick=[^\n]*\n", '', s)
 block = (here / 'journal_block.js').read_text(encoding='utf-8')
 s = lit1("$('#jback').onclick=closeJ;\n})();", "$('#jback').onclick=closeJ;\n" + block + "\n})();", s)
+
+# 3a. End Turn button -> full screen toggle (like F11)
+s = lit1("else if(k==='e'){turn++;hist=[];TXA[2][0]='Turn  '+turn;RUNTX()}",
+         "else if(k==='e'){const d=document,el=d.documentElement;if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d)}else{const r=el.requestFullscreen||el.webkitRequestFullscreen;if(r)Promise.resolve(r.call(el)).catch(()=>window.groveToast&&window.groveToast('Your browser blocked full screen. Press F11 instead.'))}}", s)
 
 # 3b. keep the player cards (top right) visible on the journal page so you can switch to another player's journal
 s = lit1("((x<400&&y<290)||(x>1195&&y<145))", "((x<400&&y<290)||(x>1195&&y<290))", s)

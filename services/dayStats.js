@@ -21,23 +21,59 @@ function parseMinutes(duration) {
   return Math.min(Math.round(total), MAX_TASK_MINUTES);
 }
 
-// Only "signal" counts as signal. Everything else (including legacy "necessity") is noise.
-const taskType = (t) => (t && t.type === 'signal' ? 'signal' : 'noise');
+// Three kinds: "signal" (a real task), "necessity" (sleep) and "noise" (everything else).
+// Necessities are left out of the signal/noise ratio, because they are not a choice.
+const taskType = (t) => (t && (t.type === 'signal' || t.type === 'necessity') ? t.type : 'noise');
+
+// A day has exactly 24 hours, and every activity must say how long it took.
+const DAY_MINUTES = 24 * 60;
+const hasDuration = (duration) => {
+  let found = false;
+  String(duration == null ? '' : duration).replace(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)(?![a-z])/gi, (m, n) => {
+    if (Number(n) > 0) found = true;
+    return m;
+  });
+  return found;
+};
+const fmtMinutes = (n) => {
+  const h = Math.floor(n / 60);
+  const m = n % 60;
+  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
+};
+
+// null when the day is fine, otherwise a message for the player.
+function checkDay(tasks) {
+  const example = 'for example "8 hours sleep, 2 hours games, 3 hours study"';
+  const missing = (tasks || []).filter((t) => !hasDuration(t.duration));
+  if (missing.length) {
+    const names = missing.slice(0, 3).map((t) => `"${t.name}"`).join(', ');
+    return `Say how long each thing took, ${example}. No duration found for ${names}${missing.length > 3 ? ' and more' : ''}.`;
+  }
+  const total = (tasks || []).reduce((sum, t) => sum + parseMinutes(t.duration), 0);
+  if (total === DAY_MINUTES) return null;
+  const diff = Math.abs(DAY_MINUTES - total);
+  return total < DAY_MINUTES
+    ? `Your day adds up to ${fmtMinutes(total)}, but a day has 24h: ${fmtMinutes(diff)} missing. Define every hour, ${example}.`
+    : `Your day adds up to ${fmtMinutes(total)}, but a day has 24h: ${fmtMinutes(diff)} too many. Define every hour, ${example}.`;
+}
 
 function computeDay(tasks) {
   const points = { int: 0, end: 0, str: 0, arc: 0, wis: 0 };
   let signalMinutes = 0;
   let noiseMinutes = 0;
+  let necessityMinutes = 0;
   for (const t of tasks || []) {
     const minutes = parseMinutes(t.duration);
-    if (taskType(t) === 'signal') signalMinutes += minutes;
+    const type = taskType(t);
+    if (type === 'signal') signalMinutes += minutes;
+    else if (type === 'necessity') necessityMinutes += minutes;
     else noiseMinutes += minutes;
     for (const k of STATS) points[k] += (t.points && t.points[k]) || 0;
   }
-  const total = signalMinutes + noiseMinutes;
+  const total = signalMinutes + noiseMinutes; // necessities (sleep) are not part of the ratio
   const ratio = total ? Math.round((signalMinutes / total) * 1000) / 1000 : 0.5;
   const totalPoints = STATS.reduce((sum, k) => sum + points[k], 0);
-  return { signalMinutes, noiseMinutes, ratio, points, totalPoints };
+  return { signalMinutes, noiseMinutes, necessityMinutes, ratio, points, totalPoints };
 }
 
 // What the API sends for one journal. Derived numbers are always recomputed from the tasks.
@@ -55,6 +91,7 @@ function journalView(doc) {
     signal_to_noise_ratio: day.ratio,
     signalMinutes: day.signalMinutes,
     noiseMinutes: day.noiseMinutes,
+    necessityMinutes: day.necessityMinutes,
     points: day.points,
     totalPoints: day.totalPoints,
     createdAt: o.createdAt,
@@ -77,4 +114,4 @@ function isFutureDate(s, now = new Date()) {
 
 const todayUTC = (now = new Date()) => now.toISOString().slice(0, 10);
 
-module.exports = { STATS, DATE_RE, MONTH_RE, parseMinutes, computeDay, journalView, isRealDate, isFutureDate, todayUTC };
+module.exports = { STATS, DATE_RE, MONTH_RE, DAY_MINUTES, parseMinutes, checkDay, computeDay, journalView, isRealDate, isFutureDate, todayUTC };

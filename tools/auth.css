@@ -47,7 +47,8 @@
 #jcs .ct .cn1{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#jcs .ct .cd{color:#5a4a2c;font-size:17px;white-space:nowrap}
 #jcs .ct .cb{width:92px;text-align:center;font-size:15px;line-height:20px;border-radius:10px;color:#fff;white-space:nowrap;flex:none}
 #jcs .ct.sg .cb{background:rgb(86,107,69)}#jcs .ct.nz .cb{background:rgb(193,97,77)}
-#jcs .ct.nz{color:#3a3326}
+#jcs .ct.nc .cb{background:rgb(98,110,150)}
+#jcs .ct.nz,#jcs .ct.nc{color:#3a3326}
 #jcs #jco{align-self:flex-start;width:auto;padding:0 18px;background:#e3d3aa}
 #jcx{position:absolute;right:28px;bottom:18px;width:auto;padding:0 20px}
 #jcs{padding-bottom:44px}
