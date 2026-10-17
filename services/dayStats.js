@@ -7,6 +7,10 @@ const MAX_TASK_MINUTES = 24 * 60;
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 const MONTH_RE = /^\d{4}-(0[1-9]|1[0-2])$/;
 
+const { classify, limitName } = require('./activities');
+const archetypes = require('./archetypes');
+const emojiCatalogue = require('./emojis');
+
 // "45 min" -> 45, "1.5 h" -> 90, "1h 30m" -> 90, "unknown" -> 30
 function parseMinutes(duration) {
   let total = 0;
@@ -21,9 +25,21 @@ function parseMinutes(duration) {
   return Math.min(Math.round(total), MAX_TASK_MINUTES);
 }
 
-// Three kinds: "signal" (a real task), "necessity" (sleep) and "noise" (everything else).
-// Necessities are left out of the signal/noise ratio, because they are not a choice.
-const taskType = (t) => (t && (t.type === 'signal' || t.type === 'necessity') ? t.type : 'noise');
+// Tracking has three kinds: "signal", "noise" and "necessity". Necessity is sleep only: it is left out of the
+// signal/noise ratio (only the remaining hours of the day count). Anything else (Unknown-category activities,
+// old non-sleep "necessity" entries, junk) is noise.
+const taskType = (t) => (t && t.type === 'signal' ? 'signal' : t && t.type === 'necessity' ? 'necessity' : 'noise');
+
+// Durations are always DISPLAYED like "30min", "1hr", "3hr 30min" ("90 mins" / "1.5 h" -> "1hr 30min").
+// The meaning of the data does not change.
+function fmtMins(n) {
+  n = Math.max(0, Math.round(Number(n) || 0));
+  const h = Math.floor(n / 60);
+  const m = n % 60;
+  if (!h) return `${m}min`;
+  return m ? `${h}hr ${m}min` : `${h}hr`;
+}
+const displayDuration = (duration) => (hasDuration(duration) ? fmtMins(parseMinutes(duration)) : String(duration == null ? 'unknown' : duration));
 
 // A day has exactly 24 hours, and every activity must say how long it took.
 const DAY_MINUTES = 24 * 60;
@@ -35,15 +51,11 @@ const hasDuration = (duration) => {
   });
   return found;
 };
-const fmtMinutes = (n) => {
-  const h = Math.floor(n / 60);
-  const m = n % 60;
-  return h ? (m ? `${h}h ${m}m` : `${h}h`) : `${m}m`;
-};
+const fmtMinutes = fmtMins;
 
 // null when the day is fine, otherwise a message for the player.
 function checkDay(tasks) {
-  const example = 'for example "8 hours sleep, 2 hours games, 3 hours study"';
+  const example = 'for example "8hr sleep, 2hr games, 3hr study"';
   const missing = (tasks || []).filter((t) => !hasDuration(t.duration));
   if (missing.length) {
     const names = missing.slice(0, 3).map((t) => `"${t.name}"`).join(', ');
@@ -53,40 +65,61 @@ function checkDay(tasks) {
   if (total === DAY_MINUTES) return null;
   const diff = Math.abs(DAY_MINUTES - total);
   return total < DAY_MINUTES
-    ? `Your day adds up to ${fmtMinutes(total)}, but a day has 24h: ${fmtMinutes(diff)} missing. Define every hour, ${example}.`
-    : `Your day adds up to ${fmtMinutes(total)}, but a day has 24h: ${fmtMinutes(diff)} too many. Define every hour, ${example}.`;
+    ? `Your day adds up to ${fmtMinutes(total)}, but a day has ${fmtMinutes(DAY_MINUTES)}: ${fmtMinutes(diff)} missing. Define every hour, ${example}.`
+    : `Your day adds up to ${fmtMinutes(total)}, but a day has ${fmtMinutes(DAY_MINUTES)}: ${fmtMinutes(diff)} too many. Define every hour, ${example}.`;
 }
 
 function computeDay(tasks) {
   const points = { int: 0, end: 0, str: 0, arc: 0, wis: 0 };
   let signalMinutes = 0;
   let noiseMinutes = 0;
-  let necessityMinutes = 0;
+  let necessityMinutes = 0; // sleep: shown in the calendar only, never part of the ratio
   for (const t of tasks || []) {
     const minutes = parseMinutes(t.duration);
     const type = taskType(t);
     if (type === 'signal') signalMinutes += minutes;
     else if (type === 'necessity') necessityMinutes += minutes;
-    else noiseMinutes += minutes;
+    else noiseMinutes += minutes; // includes Unknown activities
     for (const k of STATS) points[k] += (t.points && t.points[k]) || 0;
   }
-  const total = signalMinutes + noiseMinutes; // necessities (sleep) are not part of the ratio
+  const total = signalMinutes + noiseMinutes; // the hours left after sleep
   const ratio = total ? Math.round((signalMinutes / total) * 1000) / 1000 : 0.5;
   const totalPoints = STATS.reduce((sum, k) => sum + points[k], 0);
   return { signalMinutes, noiseMinutes, necessityMinutes, ratio, points, totalPoints };
 }
 
+// One task as the browser may see it. Unknown activities are always named "Unknown", get a neutral image and
+// are tracked as noise; the specific activity is never exposed.
+function presentTask(t, archetype) {
+  let c = classify({ activity: t.activity, name: t.name, type: t.type }, archetype);
+  // Entries saved before activity ids existed: only re-label what the rules require (Unknown + sleep), so the
+  // points already granted for other old tasks are never changed behind the player's back.
+  const legacy = !t.activity;
+  if (legacy && c.fixed && c.category !== 'Unknown' && c.activity !== 'sleep') c = classify({ type: t.type }, archetype);
+  const base = { emoji: t.emoji, name: limitName(t.name), duration: displayDuration(t.duration), points: t.points };
+  if (c.fixed && c.category === 'Unknown') {
+    return { ...base, emoji: c.image, name: c.name, type: 'noise', category: 'Noise', activity: c.activity, points: { int: 0, end: 0, str: 0, arc: 0, wis: 0 } };
+  }
+  // the image: a fixed one from activities.json, else the one saved with the task (old placeholder icons are replaced by name)
+  if (c.fixed) return { ...base, name: c.name, emoji: c.image || emojiCatalogue.reuse({ stored: t.emoji, name: c.name }), type: c.type, category: c.category, activity: c.activity, points: c.type === 'signal' ? t.points : { int: 0, end: 0, str: 0, arc: 0, wis: 0 } };
+  return { ...base, emoji: emojiCatalogue.reuse({ stored: t.emoji, name: t.name }), type: c.type, category: c.category, activity: c.activity };
+}
+
 // What the API sends for one journal. Derived numbers are always recomputed from the tasks.
 function journalView(doc) {
   const o = doc && typeof doc.toObject === 'function' ? doc.toObject() : doc;
-  const tasks = (o.tasks || []).map((t) => ({ ...t, type: taskType(t) }));
+  // Every task is re-classified from the single source of truth (data/activities.json), so old entries
+  // that were saved with explicit names / the old "necessity" type are shown correctly too.
+  // each journal is shown under the archetype it was written in (older ones have none = radical)
+  const tasks = (o.tasks || []).map((t) => presentTask(t, o.archetype));
   const day = computeDay(tasks);
   return {
     _id: o._id,
     id: o._id,
     player: o.player,
     date: o.date,
-    rawText: o.rawText,
+    archetype: archetypes.norm(o.archetype),
+    // rawText (the written journal entry) is deliberately NOT sent: past entries are not viewable in the app.
     tasks,
     signal_to_noise_ratio: day.ratio,
     signalMinutes: day.signalMinutes,
@@ -114,4 +147,4 @@ function isFutureDate(s, now = new Date()) {
 
 const todayUTC = (now = new Date()) => now.toISOString().slice(0, 10);
 
-module.exports = { STATS, DATE_RE, MONTH_RE, DAY_MINUTES, parseMinutes, checkDay, computeDay, journalView, isRealDate, isFutureDate, todayUTC };
+module.exports = { presentTask, displayDuration, STATS, DATE_RE, MONTH_RE, DAY_MINUTES, parseMinutes, checkDay, computeDay, journalView, isRealDate, isFutureDate, todayUTC };

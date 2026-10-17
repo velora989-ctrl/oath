@@ -23,6 +23,8 @@ app.use('/api/auth', require('./routes/auth'));
 app.use('/api/players', require('./routes/players'));
 app.use('/api/journals', require('./routes/journals'));
 app.use('/api/emojis', require('./routes/emojis'));
+app.use('/api/characters', require('./routes/characters'));
+app.use('/api/archetypes', require('./routes/archetypes'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 

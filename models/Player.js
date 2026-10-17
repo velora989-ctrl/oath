@@ -1,4 +1,6 @@
 const mongoose = require('mongoose');
+const { KEYS: CHARACTER_KEYS } = require('../services/characters');
+const { KEYS: ARCHETYPE_KEYS } = require('../services/archetypes');
 
 // Level thresholds on total points. Tune freely; the frontend only displays what the server sends.
 const THRESHOLDS = [0, 25, 75, 150, 250, 375, 525, 700, 900];
@@ -21,10 +23,17 @@ const playerSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true, lowercase: true, trim: true },
     passwordHash: { type: String, required: true, select: false },
     avatar: { type: String, default: '' },
+    // the character this player chose (services/characters.js); unset until they pick one, and never shared by two players
+    character: { type: String, enum: CHARACTER_KEYS, default: undefined },
+    // 'liberal' (easy) or 'radical' (hard), chosen once at registration (services/archetypes.js). Unset = radical, the original rules.
+    archetype: { type: String, enum: ARCHETYPE_KEYS, default: undefined },
     stats: { type: statsSchema, default: () => ({}) },
   },
   { timestamps: true }
 );
+
+// one player per character (players that have not chosen yet are left out of the index)
+playerSchema.index({ character: 1 }, { unique: true, partialFilterExpression: { character: { $type: 'string' } } });
 
 // Everything the public (other players) is allowed to see. Never email/password.
 playerSchema.methods.toPublic = function () {
@@ -36,6 +45,8 @@ playerSchema.methods.toPublic = function () {
     id: this._id,
     name: this.name,
     avatar: this.avatar,
+    character: this.character || null,
+    archetype: this.archetype || null, // null = not chosen yet (counts as radical)
     stats,
     totalPoints,
     level,

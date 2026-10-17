@@ -64,7 +64,7 @@ s = lit1("else if(k==='e'){turn++;hist=[];TXA[2][0]='Turn  '+turn;RUNTX()}",
          "else if(k==='e'){const d=document,el=d.documentElement;if(d.fullscreenElement||d.webkitFullscreenElement){(d.exitFullscreen||d.webkitExitFullscreen).call(d)}else{const r=el.requestFullscreen||el.webkitRequestFullscreen;if(r)Promise.resolve(r.call(el)).catch(()=>window.groveToast&&window.groveToast('Your browser blocked full screen. Press F11 instead.'))}}", s)
 
 # 3b. keep the player cards (top right) visible on the journal page so you can switch to another player's journal
-s = lit1("((x<400&&y<290)||(x>1195&&y<145))", "((x<400&&y<290)||(x>1195&&y<290))", s)
+s = lit1("((x<400&&y<290)||(x>1195&&y<145))", "((x<400&&y<290)||(x>1195&&y<490))", s)
 
 # 4. auth panel, styles, api client, glue
 s = lit1('</style></head>', (here / 'auth.css').read_text(encoding='utf-8') + '</style></head>', s)
@@ -75,6 +75,13 @@ i = s.rstrip().rfind(tail)
 s = (s[:i] + '</script>\n' + (here / 'auth.html').read_text(encoding='utf-8')
      + '<script src="api.js"></script>\n<script>\n' + (here / 'glue.js').read_text(encoding='utf-8')
      + '</script></body></html>\n')
+
+# 5. quote panel + fullscreen button (tools/frontend_patches.py)
+sys.path.insert(0, str(here))
+import frontend_patches
+s = frontend_patches.apply(s)
+import frontend_cards
+s = frontend_cards.apply(s)
 
 out.write_text(s, encoding='utf-8')
 print(f'wrote {out} ({len(s)/1e6:.1f} MB)')

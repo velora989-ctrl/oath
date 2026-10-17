@@ -3,9 +3,29 @@ const $j=s=>JP.querySelector(s),ta=$('#jta'),pad2=n=>String(n).padStart(2,'0');
 const SN={int:'INT',str:'STR',end:'END',arc:'ARC',wis:'WIS'};
 const escA=t=>String(t==null?'':t).replace(/[<>&"']/g,'');
 function dKey(){const i=document.querySelector('#jdate'),m=/^\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\s*$/.exec(i?i.value:DS)||/(\d{2})\/(\d{2})\/(\d{4})/.exec(DS);return m[3]+'-'+pad2(m[2])+'-'+pad2(m[1])}
-/* three kinds of rows: signal (a task), necessity (sleep, no bar) and noise (everything else) */
-function rowHTML(x){const sg=x.type==='signal',nc=x.type==='necessity',bk=sg?'signa':'noise',[bw,bh]=P[bk],pts=Object.keys(SN).filter(k=>x.points&&x.points[k]>0).map(k=>'+'+x.points[k]+' '+SN[k]).join(', ');
-return`<div class="jr" title="${escA(pts||(sg?'signal':nc?'necessity':'noise'))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn">${escA(x.name)}</span>${nc?'':`<img src="${IM[bk]}" alt="" style="left:${1036-785-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px">`}<span class="jt">${escA(x.duration)}</span></div>`}
+/* A task called "Unknown" keeps that name (and its neutral image) but is a NOISE task everywhere: red marker in the
+   activity log, red "Noise" badge in the calendar, red part of the pie (the server counts it as noise). */
+const catOf=x=>x.type==='signal'?'signal':(x.type==='necessity'?'necessity':'noise');
+/* durations are shown like "30min", "1hr", "3hr 30min": "90 mins" / "1.5 h" -> "1hr 30min" (the server already sends this
+   format; this also covers any old "mins" text that might still arrive) */
+function mins(d){const s=String(d==null?'':d);let t=0,f=false;s.replace(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)(?![a-z])/gi,(m,n,u)=>{f=true;t+=/^h/i.test(u)?Number(n)*60:Number(n);return m});
+ if(!f)return s;return fmtMin(t)}
+function rowHTML(x){const sg=x.type==='signal',bk=sg?'signa':'noise',[bw,bh]=P[bk],pts=Object.keys(SN).filter(k=>x.points&&x.points[k]>0).map(k=>'+'+x.points[k]+' '+SN[k]).join(', ');
+return`<div class="jr" title="${escA(pts||catOf(x))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn" title="${escA(x.name)}">${escA(x.name)}</span><img src="${IM[bk]}" alt="" style="left:${1036-785-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px"><span class="jt">${escA(mins(x.duration))}</span></div>`}
+
+/* ---------- full task names ----------
+   The server limits a task name to 30 characters. The name box (172px) is never cut with "...": the text is made
+   smaller until it fits on one line, and if it still does not, it goes on two lines. Text is measured on a canvas, so
+   it does not depend on the page zoom. */
+const NCX=document.createElement('canvas').getContext('2d'),NFONT="'Patrick Hand','Comic Sans MS',cursive",NW=172,NH=41;
+const tw=(t,s,ls)=>{NCX.font=s+'px '+NFONT;return NCX.measureText(t).width+ls*t.length};
+function nameLines(t,s,ls){let n=1,cur='';for(const w of t.split(' ')){const c=cur?cur+' '+w:w;if(tw(c,s,ls)<=NW*.96||!cur){cur=c;if(tw(cur,s,ls)>NW*.96)return 99}else{n++;cur=w;if(tw(cur,s,ls)>NW*.96)return 99}}return n}
+function fitNames(){document.querySelectorAll('#jlist .jn').forEach(el=>{const t=el.textContent.trim(),st=el.style;
+ st.whiteSpace='nowrap';st.lineHeight=NH+'px';st.paddingTop='0';st.letterSpacing='.8px';
+ for(let s=19;s>=15;s--){if(tw(t,s,.8)<=NW*.96){st.fontSize=s+'px';return}}
+ st.whiteSpace='normal';st.letterSpacing='.3px';
+ for(let s=16;s>=11;s--){const n=nameLines(t,s,.3);if(n<=2||s===11){const lh=s+2;st.fontSize=s+'px';st.lineHeight=lh+'px';st.paddingTop=Math.max(0,(NH-Math.min(n,2)*lh)/2)+'px';return}}})}
+{const jl=$('#jlist');new MutationObserver(fitNames).observe(jl,{childList:true});if(document.fonts&&document.fonts.ready)document.fonts.ready.then(fitNames)}
 
 /* ---------- dates ---------- */
 const WK=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'],MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
@@ -13,7 +33,7 @@ const keyOf=(y,m,d)=>y+'-'+pad2(m+1)+'-'+pad2(d);            /* m is 0-based */
 const key2in=k=>k.slice(8)+'/'+k.slice(5,7)+'/'+k.slice(0,4);   /* 2026-10-14 -> 14/10/2026 */
 const todayKey=()=>{const t=new Date();return keyOf(t.getFullYear(),t.getMonth(),t.getDate())};
 const longDate=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'})};
-const fmtMin=n=>{n=Math.round(n);const h=Math.floor(n/60),r=n%60;return h?(r?h+'h '+r+'m':h+'h'):r+'m'};
+function fmtMin(n){n=Math.max(0,Math.round(Number(n)||0));const h=Math.floor(n/60),m=n%60;return !h?m+'min':(m?h+'hr '+m+'min':h+'hr')}
 function setKey(k){const i=document.querySelector('#jdate');if(i)i.value=key2in(k)}
 function go(k){setKey(k);document.querySelector('#jdate').dispatchEvent(new Event('change',{bubbles:true}))}
 function stepDay(n){const [y,m,d]=dKey().split('-').map(Number),t=new Date(y,m-1,d+n),k=keyOf(t.getFullYear(),t.getMonth(),t.getDate());if(k>todayKey())return;go(k)}
@@ -39,11 +59,11 @@ const _layout=layout;layout=function(){_layout();afterRender()};   /* openJ re-r
 
 function showDay(){
  const e=entry();
- S.ent=e?e.tasks:[];S.g=e?{...e.points}:{int:0,str:0,end:0,arc:0,wis:0};S.ratio=e?e.signal_to_noise_ratio:.5;
+ S.ent=e?e.tasks.filter(x=>x.type!=='necessity'):[];   /* sleep (necessity) is shown in the calendar only, not in the activity log */S.g=e?{...e.points}:{int:0,str:0,end:0,arc:0,wis:0};S.ratio=e?e.signal_to_noise_ratio:.5;
  const k=dKey();
  ta.readOnly=true;
  if(LOADING){ta.value='';ta.placeholder='Loading...'}
- else if(e){ta.value=e.rawText}
+ else if(e){ta.value='';ta.placeholder='Entry saved. Past entries are not shown.'}   /* saved text is never displayed */
  else if(WHO.mine&&k<=todayKey()){ta.readOnly=false;ta.value=drafts[k]||'';ta.placeholder='Write about your day...'}
  else{ta.value='';ta.placeholder=k>todayKey()?"That day hasn't happened yet":((WHO.name||'This player')+' wrote nothing on this day')}
  render();afterRender();const l=$('#jlist');l.scrollTop=0}
@@ -95,11 +115,11 @@ function calSummary(){
  let h='';
  if(!e){h+='<p class="cnone">'+(k>todayKey()?"That day hasn't happened yet.":'No journal on this day.')+'</p>'}
  else{const s=Math.round(e.ratio*100),pts=Object.keys(SN).filter(x=>e.points[x]>0).map(x=>'<span>'+SN[x]+' +'+e.points[x]+'</span>').join('');
-  h+='<div class="csn"><div class="cbar"><i style="width:'+s+'%"></i></div><div class="cbl"><span>Signal '+s+'%</span><span>Noise '+(100-s)+'%</span></div><div class="cmn">'+fmtMin(e.signalMinutes)+' signal / '+fmtMin(e.noiseMinutes)+' noise'+(e.necessityMinutes?' / '+fmtMin(e.necessityMinutes)+' sleep':'')+'</div></div>'+
+  h+='<div class="csn"><div class="cbar"><i style="width:'+s+'%"></i></div><div class="cbl"><span>Signal '+s+'%</span><span>Noise '+(100-s)+'%</span></div><div class="cmn">'+fmtMin(e.signalMinutes)+' signal / '+fmtMin(e.noiseMinutes)+' noise'+(e.necessityMinutes>0?' &middot; '+fmtMin(e.necessityMinutes)+' sleep (not counted)':'')+'</div></div>'+
    '<div class="cpt"><b>Points gained: +'+e.totalPoints+'</b>'+(pts?'<div>'+pts+'</div>':'')+'</div>'+
-   '<div class="ctl">'+e.tasks.map(t=>{const sg=t.type==='signal',nc=t.type==='necessity',p=Object.keys(SN).filter(x=>t.points&&t.points[x]>0).map(x=>' +'+t.points[x]+' '+SN[x]).join('');
-    return'<div class="ct '+(sg?'sg':nc?'nc':'nz')+'"><img src="'+escA(t.emoji)+'" alt=""><span class="cn1">'+escA(t.name)+'</span><span class="cd">'+escA(t.duration)+'</span><span class="cb">'+(sg?'Signal'+escA(p):nc?'Necessity':'Noise')+'</span></div>'}).join('')+'</div>'}
- if(k<=todayKey()&&(e||WHO.mine||WHO.id))h+='<button class="jnav" id="jco">'+(e?'Open this journal':(WHO.mine?'Write this day':'Open this day'))+'</button>';
+   '<div class="ctl">'+e.tasks.map(t=>{const nc=t.type==='necessity',sg=!nc&&t.type==='signal',p=Object.keys(SN).filter(x=>t.points&&t.points[x]>0).map(x=>' +'+t.points[x]+' '+SN[x]).join('');
+    return'<div class="ct '+(nc?'nc':sg?'sg':'nz')+'"><img src="'+escA(t.emoji)+'" alt=""><span class="cn1">'+escA(t.name)+'</span><span class="cd">'+escA(mins(t.duration))+'</span><span class="cb">'+(nc?'Necessity':sg?'Signal'+escA(p):'Noise')+'</span></div>'}).join('')+'</div>'}
+ if(k<=todayKey()&&(e||WHO.mine||WHO.id))h+='<button class="jnav" id="jco">'+(e?'View this day':(WHO.mine?'Write this day':'Open this day'))+'</button>';
  box.innerHTML=h;const b=$c('#jco');if(b)b.onclick=()=>{calClose();go(k)}}
 async function calLoad(){
  const id=WHO.id,rq=++CAL.req;CAL.days={};calRender();if(!id)return;

@@ -1,0 +1,39 @@
+{
+  "_readme": "The archetypes a player chooses at registration. An archetype is a rule set that decides what is Signal and what is Noise. ELDEN LORD (hard, key radical) = the configuration the site had before archetypes existed: data/activities.json exactly as it is, no overrides. TARNISHED (easy, key liberal) = everything except distractions is Signal; 'overrides' flips listed activities (by id from data/activities.json) to Signal. 'noPoints' = ids that count as Signal for the ratio but earn no points (routine basics, so they cannot be farmed). Sleep (Necessity) and the private 'Unknown' activities never change: Unknown is always Noise. 'rules' is the text put into the AI prompt (prompts/journalPrompt.txt, {{ARCHETYPE_RULES}}). name / mode / summary / signal / noise are the simple-language texts the registration screen shows.",
+  "default": "radical",
+  "archetypes": {
+    "liberal": {
+      "key": "liberal",
+      "name": "Tarnished",
+      "mode": "Easy mode",
+      "summary": "Still wandering the Lands Between, so almost everything useful in your day counts as Signal (good time). Only distractions count as Noise (wasted time).",
+      "signal": "School, studying, work, chores, meals, exercise, reading, family and everyday life",
+      "noise": "Scrolling, watching web series, playing video games and other time-wasters",
+      "overrides": {
+        "school": "Signal",
+        "tuition": "Signal",
+        "study_school": "Signal",
+        "wake_up": "Signal",
+        "morning": "Signal",
+        "breakfast": "Signal",
+        "bath": "Signal",
+        "rest": "Signal",
+        "dinner": "Signal",
+        "park": "Signal"
+      },
+      "noPoints": ["wake_up", "morning", "breakfast", "bath", "rest", "dinner", "park"],
+      "rules": "- **NOISE (distractions only):** scrolling social media or short videos, watching web series / shows / movies / casual entertainment videos, playing video games, any other mindless time-wasting, and personal time/private time/gooning/related things (anything called \"personal time\" is this category).\n- **SIGNAL:** EVERYTHING ELSE. School, classes, tuition, homework, studying, institutions, work, projects, household chores, cooking, cleaning, errands, family time, socializing, meals, bathing, morning routine, rest, walks, exercise, reading, learning, meditation, creative practice and so on. If an activity is not clearly a distraction, it is signal.\n- Routine basics (waking up, morning routine, breakfast, bath, dinner, rest, park) are signal but earn zero points.\n- School classes, tuition, homework and school study are signal in this mode."
+    },
+    "radical": {
+      "key": "radical",
+      "name": "Elden Lord",
+      "mode": "Hard mode",
+      "summary": "Only a true Elden Lord claims the throne: only time spent growing yourself counts as Signal (good time). Everything else counts as Noise (wasted time), even normal things like school and chores. This is how the Grove has always worked.",
+      "signal": "Studying for growth, business videos and podcasts, books, the gym, building and creating things, meditation",
+      "noise": "School, tuition, chores, meals, bathing, resting, games, scrolling, series and everything else",
+      "overrides": {},
+      "noPoints": [],
+      "rules": "- **SIGNAL:** deliberate learning, project/business work, creative practice, physical training, meditation, deliberate reflection, reading for growth.\n- **NOISE:** meals, rest, chores, commuting, school, socializing, casual entertainment, games, scrolling, casual walks/sports, writing, personal time/private time/gooning/related things (anything called \"personal time\" is this category).\n- School classes, tuition, homework and school study are always noise, even though they are educational.\n- Self-directed study, youtube educational/related to work/business/ meaningful videos videos, youtube podcasts, books, and gym training are signal."
+    }
+  }
+}

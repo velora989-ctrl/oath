@@ -1,7 +1,368 @@
 [
-  { "name": "Eating / meals", "url": "/emojis/eat.png" },
-  { "name": "Study / reading / learning / coding", "url": "/emojis/study.png" },
-  { "name": "Gaming / entertainment / anime / web series", "url": "/emojis/game.png" },
-  { "name": "Exercise / gym / walking / general activity", "url": "/emojis/walk.png", "default": true },
-  { "name": "Sleep / rest", "url": "/emojis/sleep.png" }
+  {
+    "key": "bath",
+    "name": "bath",
+    "names": [
+      "bath"
+    ],
+    "keywords": [
+      "bath"
+    ],
+    "url": "/emojis/bath.png"
+  },
+  {
+    "key": "breakfast",
+    "name": "breakfast, dinner, lunch, meal, eating",
+    "names": [
+      "breakfast",
+      "dinner",
+      "lunch",
+      "meal",
+      "eating"
+    ],
+    "keywords": [
+      "breakfast",
+      "brunch",
+      "dinner",
+      "eating",
+      "lunch",
+      "meal",
+      "snack",
+      "supper"
+    ],
+    "url": "/emojis/breakfast.png"
+  },
+  {
+    "key": "chores",
+    "name": "chores, cleaning",
+    "names": [
+      "chores",
+      "cleaning"
+    ],
+    "keywords": [
+      "chores",
+      "cleaning"
+    ],
+    "url": "/emojis/chores.png"
+  },
+  {
+    "key": "coding",
+    "name": "coding",
+    "names": [
+      "coding"
+    ],
+    "keywords": [
+      "coding"
+    ],
+    "url": "/emojis/coding.png"
+  },
+  {
+    "key": "cooking",
+    "name": "cooking",
+    "names": [
+      "cooking"
+    ],
+    "keywords": [
+      "cooking",
+      "cook",
+      "kitchen"
+    ],
+    "url": "/emojis/cooking.png"
+  },
+  {
+    "key": "games",
+    "name": "games, gaming",
+    "names": [
+      "games",
+      "gaming"
+    ],
+    "keywords": [
+      "games",
+      "gaming"
+    ],
+    "url": "/emojis/games.png"
+  },
+  {
+    "key": "guitar",
+    "name": "guitar, music, dancing, singing",
+    "names": [
+      "guitar",
+      "music",
+      "dancing",
+      "singing"
+    ],
+    "keywords": [
+      "dancing",
+      "guitar",
+      "music",
+      "singing"
+    ],
+    "url": "/emojis/guitar.png"
+  },
+  {
+    "key": "gym",
+    "name": "gym, calisthenics, physical exercise, workout",
+    "names": [
+      "gym",
+      "calisthenics",
+      "physical exercise",
+      "workout"
+    ],
+    "keywords": [
+      "calisthenics",
+      "exercise",
+      "gym",
+      "physical exercise",
+      "running",
+      "work out",
+      "workout"
+    ],
+    "url": "/emojis/gym.png"
+  },
+  {
+    "key": "making_mental_models",
+    "name": "making mental models, thinking",
+    "names": [
+      "making mental models",
+      "thinking"
+    ],
+    "keywords": [
+      "making mental models",
+      "thinking"
+    ],
+    "url": "/emojis/making_mental_models.png"
+  },
+  {
+    "key": "meditation",
+    "name": "meditation, self reflection",
+    "names": [
+      "meditation",
+      "self reflection"
+    ],
+    "keywords": [
+      "meditation",
+      "self reflection"
+    ],
+    "url": "/emojis/meditation.png"
+  },
+  {
+    "key": "morning_routine",
+    "name": "morning routine",
+    "names": [
+      "morning routine"
+    ],
+    "keywords": [
+      "morning routine"
+    ],
+    "url": "/emojis/morning_routine.png"
+  },
+  {
+    "key": "park",
+    "name": "park",
+    "names": [
+      "park"
+    ],
+    "keywords": [
+      "park"
+    ],
+    "url": "/emojis/park.png"
+  },
+  {
+    "key": "project",
+    "name": "project",
+    "names": [
+      "project"
+    ],
+    "keywords": [
+      "project"
+    ],
+    "url": "/emojis/project.png",
+    "default": true
+  },
+  {
+    "key": "reading_self_help_books",
+    "name": "reading self help books, fiction, growth related study, making notes (Except academics)",
+    "names": [
+      "reading self help books",
+      "fiction",
+      "growth related study",
+      "making notes (Except academics)"
+    ],
+    "keywords": [
+      "book",
+      "books",
+      "fiction",
+      "growth related study",
+      "making notes",
+      "notes",
+      "reading",
+      "reading self help books",
+      "study growth"
+    ],
+    "url": "/emojis/reading_self_help_books.png"
+  },
+  {
+    "key": "school",
+    "name": "school",
+    "names": [
+      "school"
+    ],
+    "keywords": [
+      "school"
+    ],
+    "url": "/emojis/school.png"
+  },
+  {
+    "key": "scrolling",
+    "name": "scrolling, phone",
+    "names": [
+      "scrolling",
+      "phone"
+    ],
+    "keywords": [
+      "phone",
+      "scrolling"
+    ],
+    "url": "/emojis/scrolling.png"
+  },
+  {
+    "key": "series",
+    "name": "series, movies, tv, entertainment, anime",
+    "names": [
+      "series",
+      "movies",
+      "tv",
+      "entertainment",
+      "anime"
+    ],
+    "keywords": [
+      "anime",
+      "entertainment",
+      "movies",
+      "series",
+      "tv"
+    ],
+    "url": "/emojis/series.png"
+  },
+  {
+    "key": "sleep",
+    "name": "sleep",
+    "names": [
+      "sleep"
+    ],
+    "keywords": [
+      "sleep"
+    ],
+    "url": "/emojis/sleep.png"
+  },
+  {
+    "key": "socializing",
+    "name": "socializing, phone_call, chatting",
+    "names": [
+      "socializing",
+      "phone_call",
+      "chatting"
+    ],
+    "keywords": [
+      "chatting",
+      "phone call",
+      "socializing"
+    ],
+    "url": "/emojis/socializing.png"
+  },
+  {
+    "key": "study_school",
+    "name": "study_school, homework, tuition",
+    "names": [
+      "study_school",
+      "homework",
+      "tuition"
+    ],
+    "keywords": [
+      "homework",
+      "study school",
+      "tuition"
+    ],
+    "url": "/emojis/study_school.png"
+  },
+  {
+    "key": "travel",
+    "name": "travel, commute, trip, excursion, mall",
+    "names": [
+      "travel",
+      "commute",
+      "trip",
+      "excursion",
+      "mall"
+    ],
+    "keywords": [
+      "commute",
+      "excursion",
+      "mall",
+      "travel",
+      "trip"
+    ],
+    "url": "/emojis/travel.png"
+  },
+  {
+    "key": "unknown",
+    "name": "unknown",
+    "names": [
+      "unknown"
+    ],
+    "keywords": [
+      "unknown"
+    ],
+    "url": "/emojis/unknown.png",
+    "private": true
+  },
+  {
+    "key": "wake_up",
+    "name": "wake_up",
+    "names": [
+      "wake_up"
+    ],
+    "keywords": [
+      "wake up"
+    ],
+    "url": "/emojis/wake_up.png"
+  },
+  {
+    "key": "work",
+    "name": "work, business",
+    "names": [
+      "work",
+      "business"
+    ],
+    "keywords": [
+      "business",
+      "work"
+    ],
+    "url": "/emojis/work.png"
+  },
+  {
+    "key": "yt_business",
+    "name": "yt_business, yt_podcast, yt_shorts creation, make_video",
+    "names": [
+      "yt_business",
+      "yt_podcast",
+      "yt_shorts creation",
+      "make_video"
+    ],
+    "keywords": [
+      "editing video",
+      "make shorts",
+      "make video",
+      "making video",
+      "shorts",
+      "video creation",
+      "video editing",
+      "youtube shorts",
+      "youtube video creation",
+      "yt business",
+      "yt podcast",
+      "yt shorts"
+    ],
+    "url": "/emojis/yt_business.png"
+  }
 ]

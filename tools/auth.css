@@ -47,9 +47,34 @@
 #jcs .ct .cn1{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#jcs .ct .cd{color:#5a4a2c;font-size:17px;white-space:nowrap}
 #jcs .ct .cb{width:92px;text-align:center;font-size:15px;line-height:20px;border-radius:10px;color:#fff;white-space:nowrap;flex:none}
 #jcs .ct.sg .cb{background:rgb(86,107,69)}#jcs .ct.nz .cb{background:rgb(193,97,77)}
-#jcs .ct.nc .cb{background:rgb(98,110,150)}
-#jcs .ct.nz,#jcs .ct.nc{color:#3a3326}
+#jcs .ct.uk .cb{background:rgb(120,108,92)}#jcs .ct.nc .cb{background:rgb(84,104,140)}
+#jcs .ct.nz,#jcs .ct.uk,#jcs .ct.nc{color:#3a3326}
 #jcs #jco{align-self:flex-start;width:auto;padding:0 18px;background:#e3d3aa}
 #jcx{position:absolute;right:28px;bottom:18px;width:auto;padding:0 20px}
 #jcs{padding-bottom:44px}
 #jcalb{font-size:18px;padding:0}
+#auth #afs{position:fixed;right:18px;bottom:18px;width:46px;height:46px;padding:0;display:flex;align-items:center;justify-content:center;border:1.5px solid #20180d;border-radius:8px;background:#eee0c6;box-shadow:inset 0 0 0 1.5px #fdfae7,1px 2px 0 rgba(0,0,0,.35);cursor:pointer}#auth #afs:hover{background:#e3d3aa}#auth #afs svg{width:26px;height:26px;fill:none;stroke:#20180d;stroke-width:2.6;stroke-linecap:square;stroke-linejoin:miter}
+#auth #apick{width:min(640px,94vw)}
+#aperr{min-height:20px;margin:0 0 8px;text-align:center;font-size:17px;color:#a12a1b}
+#achars{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin:0 0 14px}
+#achars .ach{position:relative;width:110px;box-sizing:border-box;padding:8px 6px 6px;border:1.5px solid #20180d;border-radius:8px;background:#f7edd6;text-align:center;cursor:pointer;box-shadow:1px 2px 0 rgba(0,0,0,.25)}
+#achars .ach:hover{background:#fffaf0}
+#achars .ach img{display:block;width:92px;height:104px;margin:0 auto 4px;object-fit:contain}
+#achars .ach span{display:block;font-size:17px;line-height:19px;color:#2b2a26}
+#achars .ach.on{background:#e3d3aa;box-shadow:0 0 0 3px #3f5a2e,1px 2px 0 rgba(0,0,0,.25)}
+#achars .ach.tk{cursor:not-allowed;background:#d9cdb0}#achars .ach.tk img{opacity:.35;filter:grayscale(1)}#achars .ach.tk span{color:#7a6c4e}
+#achars .ach em{position:absolute;left:50%;top:44px;transform:translateX(-50%) rotate(-8deg);padding:1px 9px;border:1.5px solid #a12a1b;border-radius:6px;background:#eee0c6;font-style:normal;font-size:16px;color:#a12a1b}
+#auth #aarch{width:min(700px,94vw)}
+#aaerr{min-height:20px;margin:0 0 8px;text-align:center;font-size:17px;color:#a12a1b}
+#aarchs{display:flex;flex-wrap:wrap;gap:14px;margin:0 0 14px}
+#aarchs .aac{flex:1 1 280px;box-sizing:border-box;padding:12px 14px 10px;border:1.5px solid #20180d;border-radius:8px;background:#f7edd6;cursor:pointer;box-shadow:1px 2px 0 rgba(0,0,0,.25)}
+#aarchs .aac:hover{background:#fffaf0}
+#aarchs .aac.on{background:#e3d3aa;box-shadow:0 0 0 3px #3f5a2e,1px 2px 0 rgba(0,0,0,.25)}
+#aarchs .aac h3{display:inline;margin:0;font:400 26px 'Patrick Hand','Comic Sans MS',cursive;-webkit-text-stroke:.3px #000}
+#aarchs .aac em{margin-left:8px;font-style:normal;font-size:16px;color:#a12a1b}
+#aarchs .aac p{margin:6px 0 0;font-size:17px;line-height:20px;color:#2b2a26}
+#aarchs .aac p.sg b{color:#3f5a2e;font-weight:400}#aarchs .aac p.nz b{color:#a12a1b;font-weight:400}
+/* activity log: the whole task name is shown (the font shrinks / wraps to two lines, see fitNames) */
+.jn{width:172px;height:41px;max-width:none;box-sizing:border-box;text-overflow:clip}
+#jcs .ct{height:auto;min-height:36px;padding:3px 0;box-sizing:border-box}
+#jcs .ct .cn1{overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;line-height:1.05}

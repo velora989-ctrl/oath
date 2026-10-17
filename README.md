@@ -5,7 +5,7 @@ Express + MongoDB + Groq.
 ## Setup
 1. `npm install`
 2. Copy `.env.example` to `.env` and fill in `MONGODB_URI`, `JWT_SECRET`, `GROQ_API_KEY`.
-3. `data/emojis.json` currently holds the 5 icons found in your design (eat, study, game, boot, sleep) in `public/emojis/`. Add more icons there, with a name and a URL each, so the model has more to choose from. Keep exactly one `"default": true` (used if the model returns an unknown URL).
+3. The activity images live in `public/emojis/` and are listed in `data/emojis.json`. Both are generated from your source images by `python3 tools/build_emojis.py "path/to/emojis_renamed"` (needs `pip install pillow`); see "Activity images" below. The generated files are already included.
 4. `npm start`
 
 The frontend is already included: `public/index.html` is your exported design, patched to use this backend. The server serves it at `/`, so there is nothing else to host and no CORS to deal with. Open http://localhost:3000.
@@ -13,13 +13,17 @@ The frontend is already included: `public/index.html` is your exported design, p
 ## API
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| POST | /api/auth/register | no | `{name,email,password}` -> `{token, player}` |
+| POST | /api/auth/register | no | `{name,email,password}` -> `{token, player}`. Once `MAX_PLAYERS` (default 5) people exist: `403` "The Grove is full. Talk to the admins to get your spot." |
 | POST | /api/auth/login | no | `{email,password}` -> `{token, player}` |
+| POST | /api/auth/character | yes | `{character}` -> `{player}`. Chosen once, from the characters nobody has (`409` if taken or already chosen) |
+| GET | /api/characters | no | every character with `taken: true/false` |
+| POST | /api/auth/archetype | yes | `{archetype: "liberal"\|"radical"} (Tarnished / Elden Lord)` -> `{player}`. Chosen once (`409` if already chosen) |
+| GET | /api/archetypes | no | the archetypes with their simple-language descriptions (shown while registering) |
 | GET | /api/auth/me | yes | own player |
 | GET | /api/players | no | all players, ranked by total points |
 | GET | /api/players/:id | no | one player (stats are public) |
-| GET | /api/players/:id/journals | no | a player's journals, newest day first (`?date=YYYY-MM-DD` for one day) |
-| GET | /api/players/:id/journal/:date | no | that player's journal for one day, or `{journal: null}` |
+| GET | /api/players/:id/journals | no | a player's days (tasks, ratio, points - no entry text), newest first (`?date=YYYY-MM-DD` for one day) |
+| GET | /api/players/:id/journal/:date | no | that player's day (no entry text), or `{journal: null}` |
 | GET | /api/players/:id/calendar?month=YYYY-MM | no | every day of the month that has a journal: signal/noise ratio, points gained, tasks (no journal text) |
 | POST | /api/journals | yes | `{text, date?}` -> Groq analysis, saved, stats updated. **One per day**: a second one for the same day gets `409` |
 | DELETE | /api/journals/:id | yes (owner) | delete journal and take back its points (this is also how you "rewrite" a day) |
@@ -27,47 +31,103 @@ The frontend is already included: `public/index.html` is your exported design, p
 
 Anyone can read any player's data (including past days); only the logged-in player can add or delete their own journals. Stats are only changed by journals.
 
-## One journal per day, signal vs noise
-- A player has at most **one journal per date** (unique index on `player + date`). Writing for a past day that is still empty is allowed; writing for a future day is refused. Once a day is saved it is locked.
-- Only deliberate **tasks** are `signal` (studying, coding, training, skill practice, meditation, real work...). Everything else is `noise`: eating, sleeping/rest, school/college attendance, chatting or talking to a girl/friends, video games, scrolling, etc. **Sleep is a necessity** (third type, `necessity`): 0 points and left out of the signal/noise ratio (the ratio covers waking time only). The server forces any activity named sleep/nap to necessity. Edit the rules in `prompts/journalPrompt.txt`.
-- The **signal/noise ratio** is calculated by the server from the task durations (`services/dayStats.js`), not by the model: signal minutes / (signal + noise minutes). If a duration is unknown, 30 min is assumed.
-- Points only come from signal tasks, as before (single stat per task, max 8).
-- **Already have data?** Run `node scripts/merge-duplicate-days.js` (dry run) and then with `--apply` once. It keeps the newest journal of each day and takes the points of the removed ones back. MongoDB cannot build the one-per-day index while duplicates exist.
+## Players and characters
+- The Grove holds at most `MAX_PLAYERS` people (default 5, set in `.env`). Anyone else who tries to register gets "The Grove is full. Talk to the admins to get your spot." Existing players can always log in. To make room or to let someone in, change `MAX_PLAYERS` or delete a player in MongoDB.
+- Characters live in `data/characters.json` (images in `public/characters/`): Mira, Pip, The Dice Lord, The Scholar, The Noble. Keep at least as many as `MAX_PLAYERS`. To add one, drop the image in `public/characters/` and add a row.
+- Right after registering, the player picks a character nobody else has (then an archetype, see "Archetypes") (taken ones are greyed out). A player without a character (for example one who registered before this existed) gets the same picker at the next login. Two players can never share a character (unique index on `character`).
+- When the site opens, the player's own character is shown first (portrait in the stats panel and the small icon on the first player card); the second card shows the player you are looking at.
+
+## Task names
+A task name is at most 30 characters (`maxNameLength` in `data/activities.json`; the server cuts longer ones at a word boundary and the model is told the limit). The activity log shows the whole name: the text gets smaller and, if needed, goes on two lines instead of being cut with "...".
+
+## Signal, Noise and Unknown (one source of truth)
+`data/activities.json` is the ONLY place that decides how a listed activity is classified. It has the 20 definitive activities with two fields each:
+- `journal` - what the journal UI shows: **Signal**, **Noise** or **Unknown**.
+- `tracking` - what every ratio, total, chart, percentage and AI prompt counts: **Signal**, **Noise** or **Necessity** (sleep only, see below).
+
+Unknown activities (Gooning, Writing, Masturbation / self-pleasure) keep the name **"Unknown"** and the neutral image, but they are **Noise**: red marker in the activity log, red "Noise" badge in the calendar, red part of the pie, and they **always count as Noise** in the maths (`services/activities.js` forces `tracking = Noise` for any Unknown row, even if the JSON said otherwise). To keep them private the app never stores or sends *which* of them it was: all three are saved as one neutral `Unknown` activity with the neutral `unknown` image.
+
+Other rules from the spec: school, tuition and studying for school are Noise; personal-growth study, business videos, podcasts, fiction / non-fiction books and the gym are Signal; **sleep is a Necessity** (see "Sleep" below). Old non-sleep "necessity" entries are read as Noise.
+
+How it flows:
+- The model is given the activity list and returns an `activity` id for each task. The **server** then forces the name, signal/noise class and points rules from the JSON - the model's own signal/noise guess is ignored for listed activities. Activities that are not on the list (coding, guitar practice, a video game...) use the id `other` and keep the model's signal/noise judgement (rules in `prompts/journalPrompt.txt`).
+- Explicit private words are swapped for the neutral phrase "personal time" before the text goes to the model (`unknownTerms` in the JSON), so the model never sees them and never refuses.
+- Old saved entries are re-labelled when they are read (`presentTask` in `services/dayStats.js`), so past "Private Time" rows show as Unknown without touching the database. Points already granted are never recalculated.
+- The signal/noise ratio is calculated by the server from the task durations: signal minutes / (signal + noise minutes). **Sleep is not part of it**: only the hours left after sleep are the total. If a duration is unknown, 30 min is assumed. Points only come from Signal tasks (single stat per task, max 8).
+
+To change a classification, edit the row in `data/activities.json`. Nothing else needs to change.
+
+## Archetypes (Tarnished / Elden Lord)
+Registration has three steps: account -> **character** -> **archetype**. An archetype is a rule set that decides what is Signal and what is Noise for that player. It is chosen once and cannot be changed (`409`), like the character.
+
+| Archetype | Mode | Meaning |
+|---|---|---|
+| `liberal` = **Tarnished** | easy | Everything except distractions is Signal. School, institutions, studying, chores, meals, exercise... are Signal. Scrolling, web series, video games and other time-wasters are Noise. |
+| `radical` = **Elden Lord** | hard | The configuration the site had before archetypes existed (`data/activities.json` exactly as it is): only growth is Signal; school, tuition, chores, meals, resting, games, scrolling and series are Noise. |
+
+- Everything lives in `data/archetypes.json` (`services/archetypes.js` loads it). It holds the simple-language texts the registration screen shows (served by `GET /api/archetypes`), the AI prompt rules (`{{ARCHETYPE_RULES}}` in `prompts/journalPrompt.txt`) and, for liberal, `overrides` (listed activities that flip to Signal, by id) and `noPoints` (routine basics: Signal for the ratio, but 0 points). Radical has no overrides, so it behaves exactly as before.
+- Sleep stays a Necessity and the private **Unknown** activities stay Noise in every archetype.
+- `data/activities.json` is still the single source of truth for the listed activities; an archetype only overrides the ids it names. `classify(..., archetype)` in `services/activities.js` applies it.
+- Players who have no archetype (registered before this existed) count as **radical** and get the picker at their next login. Every journal stores the archetype it was written in (`Journal.archetype`), so a saved day is always shown the way it was counted.
+- To change the descriptions, the liberal list or the points rule, edit `data/archetypes.json`. Nothing else needs to change.
+
+## Sleep (necessity)
+Sleep is the only **Necessity** activity (`data/activities.json`, row 10).
+- It is **not shown in the activity log** (journal page). It is shown **only in the calendar**: in the selected day's task list (blue "Necessity" badge) and as `N sleep (not counted)` under the signal/noise bar.
+- It is **left out of the signal/noise ratio and the pie**: ratio = signal / (signal + noise), where signal + noise are the hours left after sleep.
+- It still counts towards the 24h check (a day must add up to 24h, sleep included), earns no points, and old entries named sleep / slept / nap are read as Necessity too (no database change needed).
+- API: each journal / calendar day has `necessityMinutes` next to `signalMinutes` and `noiseMinutes`; sleep stays in `tasks` with `type: "necessity"`, `category: "Necessity"` (the browser hides it from the log).
+- The AI prompt (`prompts/journalPrompt.txt`) tells the model to log sleep as its own task (`activity: "sleep"`, `type: "necessity"`).
+
+## Activity images
+Every task in the activity log and the calendar gets an image. Which one, in order:
+1. **Unknown activities** always get the private `unknown` image (the model never sees or picks it).
+2. **Listed activities** use the fixed `image` of their row in `data/activities.json` (school, wake up, morning routine, breakfast, bath, tuition and study for school share `study_school`, study for growth and both book types share the reading image, sleep, both YouTube rows share `yt_business`, dinner, park, gym). `rest` has no image yet.
+3. **Everything else** (coding, guitar, games...): the model answers with an image **key** from the catalogue in the prompt (`emoji` field, e.g. `coding`).
+4. If the model's pick is missing or invalid, the words in the task name are matched against each image's names ("homework" -> `study_school`, "anime" -> `series`; `services/emojis.js`).
+5. Otherwise the default image (`project`, the entry with `"default": true`).
+
+Old saved entries are re-imaged when they are read, so entries saved with the old placeholder icons get the right image too (no database change).
+
+**Adding / renaming images.** Name each source file after what it shows; one image can serve several activities: `gym, calisthenics, physical exercise.png`. The first name becomes its key (`gym`). Text in brackets, e.g. `making notes(Except academics)`, is shown to the model but not used for keyword matching. Then run `python3 tools/build_emojis.py "folder"`: it trims the empty space around each icon, makes it square (256x256, transparent) and rewrites `public/emojis/` and `data/emojis.json`. To pin an image to a listed activity, set `"image": "/emojis/<key>.png"` on its row in `data/activities.json`. The prompt (`prompts/journalPrompt.txt`, sections 4 and 5) lists the images and the activity ids for the model.
+
+## Past journal entries are hidden
+The app only shows **charts** (the signal/noise pie, the calendar bars) and the **activity log**. The text of a saved entry is never shown and the API no longer sends `rawText` at all; it stays in the database for the record. You can still write today's entry (or an empty past day), and the day arrows / calendar still switch between days to show that day's chart and activity log.
+
+## Durations are shown as hours and minutes
+Everything is displayed as `30min`, `1hr`, `1hr 30min`, `3hr 30min`... (activity log, calendar, error messages). The format lives in one function, `fmtMins` in `services/dayStats.js`, and `fmtMin` in `tools/journal_block.js` for the browser. The server converts old `90 mins` / `1.5 h` style values when it reads them; the calculations always used minutes and are unchanged.
 
 ## Every hour must be defined
-A journal is refused (400, nothing saved, no points) unless every activity has a duration and the durations add up to **exactly 24h**, e.g. `8 hours sleep, 2 hours games, 3 hours study, ...`. The message says how many hours are missing or too many (`checkDay` in `services/dayStats.js`).
-
-## Private activity in the journal
-Words like masturbation / self-pleasure / gooning are swapped for the neutral phrase "private personal time" before the text goes to the AI (`PRIVATE_RE` in `services/groq.js`), so the model never refuses. It is logged as noise ("Private Time") and its hours count toward the 24h. The saved journal text is not changed.
+A journal is refused (400, nothing saved, no points) unless every activity has a duration and the durations add up to **exactly 24h** (sleep included), e.g. `8hr sleep, 2hr games, 3hr study, ...`. The message says how many hours are missing or too many (`checkDay` in `services/dayStats.js`).
 
 ## Journal document
 ```json
 {
   "date": "2026-10-14",
   "rawText": "...",
-  "tasks": [{ "emoji": "url", "name": "Morning Gym Session", "type": "signal", "duration": "1 h",
+  "tasks": [{ "emoji": "url", "name": "Gym", "activity": "gym", "category": "Signal", "type": "signal", "duration": "1hr",
               "points": { "int": 0, "end": 0, "str": 5, "arc": 0, "wis": 0 } }],
   "signal_to_noise_ratio": 0.2,
-  "signalMinutes": 180, "noiseMinutes": 720,
+  "signalMinutes": 180, "noiseMinutes": 720, "necessityMinutes": 480,
   "points": { "int": 7, "end": 0, "str": 5, "arc": 0, "wis": 0 }, "totalPoints": 12
 }
 ```
-The model only returns `tasks`. The server validates them: unknown emoji URLs fall back to the default, noise always gets 0 points, signal tasks keep only their strongest stat, capped at 8. Everything else in the document is derived from the tasks.
+`type` is the tracking class (`signal` | `noise` | `necessity`), `category` is the journal category (`Signal` | `Noise` | `Unknown` | `Necessity`). The model only returns `tasks`. The server validates them: classification comes from `data/activities.json`, the image is chosen as described in "Activity images", noise always gets 0 points, signal tasks keep only their strongest stat, capped at 8. `rawText` is not part of what the API sends. Everything else in the document is derived from the tasks.
 
 ## Frontend
 `public/index.html` is generated from your design export by `tools/build_frontend.py`. When you re-export the design from your tool, rebuild with:
 
     python3 tools/build_frontend.py "path/to/Mira's Grove.html"
 
-The script patches the export (anchored edits, fails loudly if the design changed too much) and writes `public/index.html`. The day navigation and calendar live in `tools/journal_block.js` (journal page), `tools/glue.js` (loading data, switching players) and `tools/auth.css` (styles). What it changes:
+The script patches the export (anchored edits, fails loudly if the design changed too much) and writes `public/index.html`. The day navigation and calendar live in `tools/journal_block.js` (journal page), `tools/glue.js` (loading data, switching players), `tools/auth.css` (styles) and `tools/frontend_patches.py` (fullscreen button). What it changes:
 - "Edit Stats" button and panel removed; that slot is now a "Log out" button. Stats only change through journals.
 - Login / register panel in the same parchment style. Name is limited to 16 characters (the stats panel is small).
-- Left stats panel shows the logged-in player (Mira portrait). The top card on the right shows another player; click it again to cycle through all players. Stats, level and title come from the server.
+- Left stats panel shows the logged-in player. The right sidebar has **five player cards**: one card per character, always in this order for everyone: Mira, The Noble (red-haired girl), The Dice Lord, The Scholar, Pip. Click a card to look at that player; the stats panel and the journal switch to them. When you log in your own card is selected. A character nobody has chosen yet is shown normally, but the mouse pointer on it is "not-allowed" and clicking does nothing. The order is `ORDER` in `tools/glue.js`. Stats, level and title come from the server.
 - Journal page: shows the viewed player's journal for the date in the date field. Change the date by typing it (dd/mm/yyyy), with the `<` `>` buttons, or with the **Calendar** button. Opening the journal always starts on today.
-- One entry per day: an empty day you may write on is editable (unsent text is remembered per day). A saved day is locked and shows the saved text, the signal/noise pie, the points of that day (Growth) and the activity log.
-- **Calendar**: a parchment panel with the month. Days with a journal show the points gained and a small green/red signal/noise bar. Click a day to see its signal/noise ratio, points gained and every task; "Open this journal" jumps to that day (double-click a day does the same). Future days are greyed out.
-- **Other players**: the player cards at the top right stay clickable while the journal is open. Click the other player's card (again to cycle through everyone) and the journal, calendar and every past day switch to that player, read-only.
+- One entry per day: an empty day you may write on is editable (unsent text is remembered per day). A saved day is locked and shows only the signal/noise pie, the points of that day (Growth) and the activity log (without sleep) - never the saved text.
+- **Calendar**: a parchment panel with the month. Days with a journal show the points gained and a small green/red signal/noise bar. Click a day to see its signal/noise ratio, points gained and every task; "View this day" jumps to that day (double-click a day does the same). Future days are greyed out.
+- **Other players**: the five player cards at the right stay clickable while the journal is open. Click a player's card and the journal, calendar and every past day switch to that player, read-only.
 - The **Reminders** and **Achievements** tabs open a full-screen picture (`public/ui/reminders.png`, `achievements.png`), no functions yet; click or press Esc to close.
-- The **End Turn** button toggles full screen (same as F11); press it again to leave.
+- The bottom-right **Fullscreen** button (YouTube-style four-corner icon, tooltip "Fullscreen" / "Exit fullscreen") really toggles fullscreen and keeps its icon in sync when you leave with Esc or the browser's controls. The login screen has its own fullscreen button (bottom right), so fullscreen works before logging in.
 - Level is computed on the server from total points (`THRESHOLDS`/`TITLES` in `models/Player.js`).
 - The pie shows the day's signal/noise ratio (computed by the server from the task durations).

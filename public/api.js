@@ -47,6 +47,13 @@
     getJournalByDate: (id, date) => request('GET', `/api/players/${id}/journal/${date}`).then((d) => d.journal),
     // calendar overview of one month (YYYY-MM): [{ date, ratio, signalMinutes, noiseMinutes, points, totalPoints, tasks }]
     getCalendar: (id, month) => request('GET', `/api/players/${id}/calendar?month=${month}`),
+    getCharacters: () => request('GET', '/api/characters').then((d) => d.characters),
+    // pick your character (once, from the ones nobody has); resolves to the updated player
+    chooseCharacter: (character) => request('POST', '/api/auth/character', { character }).then((d) => d.player),
+    // the archetypes (liberal = easy, radical = hard) with their simple-language descriptions
+    getArchetypes: () => request('GET', '/api/archetypes').then((d) => d.archetypes),
+    // pick your archetype (once); resolves to the updated player
+    chooseArchetype: (archetype) => request('POST', '/api/auth/archetype', { archetype }).then((d) => d.player),
     getEmojis: () => request('GET', '/api/emojis').then((d) => d.emojis),
 
     // authenticated writes (own data only)

@@ -5,6 +5,7 @@ const auth = require('../middleware/auth');
 const Journal = require('../models/Journal');
 const Player = require('../models/Player');
 const { analyzeJournal } = require('../services/groq');
+const archetypes = require('../services/archetypes');
 const { STATS, computeDay, checkDay, journalView, isRealDate, isFutureDate, todayUTC } = require('../services/dayStats');
 
 const router = express.Router();
@@ -41,9 +42,12 @@ router.post('/', auth, analyzeLimiter, async (req, res, next) => {
       return res.status(409).json({ error: `You already wrote your journal for ${niceDate(date)}`, journal: journalView(existing) });
     }
 
+    // the player's archetype decides what is signal and what is noise (no archetype chosen = radical)
+    const archetype = archetypes.norm(req.player.archetype);
+
     let analysis;
     try {
-      analysis = await analyzeJournal(text, req.player._id);
+      analysis = await analyzeJournal(text, req.player._id, archetype);
     } catch (err) {
       console.error('AI error:', err.message);
       const detail = process.env.NODE_ENV === 'production' ? '' : ` (${err.message.slice(0, 160)})`;
@@ -59,6 +63,7 @@ router.post('/', auth, analyzeLimiter, async (req, res, next) => {
       journal = await Journal.create({
         player: req.player._id,
         date,
+        archetype,
         rawText: text,
         tasks: analysis.tasks,
         signal_to_noise_ratio: analysis.signal_to_noise_ratio,
