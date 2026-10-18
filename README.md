@@ -13,7 +13,7 @@ The frontend is already included: `public/index.html` is your exported design, p
 ## API
 | Method | Route | Auth | Purpose |
 |---|---|---|---|
-| POST | /api/auth/register | no | `{name,email,password}` -> `{token, player}`. Once `MAX_PLAYERS` (default 5) people exist: `403` "The Grove is full. Talk to the admins to get your spot." |
+| POST | /api/auth/register | no | `{name,email,password}` -> `{token, player}`. Once `MAX_PLAYERS` (default 6) people exist: `403` "The Grove is full. Talk to the admins to get your spot." |
 | POST | /api/auth/login | no | `{email,password}` -> `{token, player}` |
 | POST | /api/auth/character | yes | `{character}` -> `{player}`. Chosen once, from the characters nobody has (`409` if taken or already chosen) |
 | GET | /api/characters | no | every character with `taken: true/false` |
@@ -32,13 +32,18 @@ The frontend is already included: `public/index.html` is your exported design, p
 Anyone can read any player's data (including past days); only the logged-in player can add or delete their own journals. Stats are only changed by journals.
 
 ## Players and characters
-- The Grove holds at most `MAX_PLAYERS` people (default 5, set in `.env`). Anyone else who tries to register gets "The Grove is full. Talk to the admins to get your spot." Existing players can always log in. To make room or to let someone in, change `MAX_PLAYERS` or delete a player in MongoDB.
-- Characters live in `data/characters.json` (images in `public/characters/`): Mira, Pip, The Dice Lord, The Scholar, The Noble. Keep at least as many as `MAX_PLAYERS`. To add one, drop the image in `public/characters/` and add a row.
+- The Grove holds at most `MAX_PLAYERS` people (default 6, set in `.env`). Anyone else who tries to register gets "The Grove is full. Talk to the admins to get your spot." Existing players can always log in. To make room or to let someone in, change `MAX_PLAYERS` or delete a player in MongoDB.
+- Characters live in `data/characters.json` (images in `public/characters/`): Mira, The Crimson Lord (the red-coated man, formerly Pip), The Dice Lord, The Scholar, The Noble, The Duchess. (Pip is still the little sprite on the map tiles.) Keep at least as many as `MAX_PLAYERS`. To add one, drop the image in `public/characters/` and add a row.
 - Right after registering, the player picks a character nobody else has (then an archetype, see "Archetypes") (taken ones are greyed out). A player without a character (for example one who registered before this existed) gets the same picker at the next login. Two players can never share a character (unique index on `character`).
 - When the site opens, the player's own character is shown first (portrait in the stats panel and the small icon on the first player card); the second card shows the player you are looking at.
 
 ## Task names
 A task name is at most 30 characters (`maxNameLength` in `data/activities.json`; the server cuts longer ones at a word boundary and the model is told the limit). The activity log shows the whole name: the text gets smaller and, if needed, goes on two lines instead of being cut with "...".
+
+## Task names and hover descriptions
+- **Name** (activity log): 2-5 words, Title Case, max 30 characters, in the player's own words and saying what was really done ("Business Podcast", "Podcast On Commute"). The naming rules are in `prompts/journalPrompt.txt` (NAMING). Listed activities are now named by the model too; the label in `data/activities.json` ("YouTube podcast") is only the fallback when the model's name is empty or a placeholder like "Activity". Sleep keeps the name "Sleep" and Unknown activities keep "Unknown".
+- **Description**: one short sentence (max 140 characters, `maxDescriptionLength` in `data/activities.json`) of what the player did, saved with each task as `description`. In the browser, hovering a task name (activity log and calendar day list) shows the name and its description. Old days have no description and show the name only.
+- Privacy: Unknown tasks and any description containing a private word get an empty description on the server, so it can never leak through the hover text.
 
 ## Signal, Noise and Unknown (one source of truth)
 `data/activities.json` is the ONLY place that decides how a listed activity is classified. It has the 20 definitive activities with two fields each:
@@ -50,12 +55,31 @@ Unknown activities (Gooning, Writing, Masturbation / self-pleasure) keep the nam
 Other rules from the spec: school, tuition and studying for school are Noise; personal-growth study, business videos, podcasts, fiction / non-fiction books and the gym are Signal; **sleep is a Necessity** (see "Sleep" below). Old non-sleep "necessity" entries are read as Noise.
 
 How it flows:
-- The model is given the activity list and returns an `activity` id for each task. The **server** then forces the name, signal/noise class and points rules from the JSON - the model's own signal/noise guess is ignored for listed activities. Activities that are not on the list (coding, guitar practice, a video game...) use the id `other` and keep the model's signal/noise judgement (rules in `prompts/journalPrompt.txt`).
+- The model is given the activity list and returns an `activity` id for each task. The **server** then forces the signal/noise class and points rules from the JSON (and the name for sleep and Unknown) - the model's own signal/noise guess is ignored for listed activities. Activities that are not on the list (coding, guitar practice, a video game...) use the id `other` and keep the model's signal/noise judgement (rules in `prompts/journalPrompt.txt`).
 - Explicit private words are swapped for the neutral phrase "personal time" before the text goes to the model (`unknownTerms` in the JSON), so the model never sees them and never refuses.
 - Old saved entries are re-labelled when they are read (`presentTask` in `services/dayStats.js`), so past "Private Time" rows show as Unknown without touching the database. Points already granted are never recalculated.
-- The signal/noise ratio is calculated by the server from the task durations: signal minutes / (signal + noise minutes). **Sleep is not part of it**: only the hours left after sleep are the total. If a duration is unknown, 30 min is assumed. Points only come from Signal tasks (single stat per task, max 8).
+- The signal/noise ratio is calculated by the server from the task durations: signal minutes / (signal + noise minutes). **Sleep is not part of it**: only the hours left after sleep are the total. If a duration is unknown, 30 min is assumed. Points only come from Signal tasks: a task can earn points in several stats, max 8 in total per task (see "Points and stats").
 
 To change a classification, edit the row in `data/activities.json`. Nothing else needs to change.
+
+## Journal text
+Every line break (Enter) in the journal becomes `". "` and the entry is saved and sent to the AI as ONE paragraph (`services/journalText.js`). A line that already ends in `. ! ? ; :` keeps its own punctuation, and empty lines are dropped.
+
+## Points and stats
+- A signal task can earn points in **several** stats when the block really holds different kinds of effort (gym + cooking = STR + ARC). The total of one task is at most 8 (scaled down together if the model goes over); splitting never gives extra points.
+- **Mixed blocks**: if one block combines signal and noise (podcast while commuting), the signal part wins: the block is Signal, named and scored after the signal part (podcast = INT).
+- Stat definitions (also in `prompts/journalPrompt.txt`):
+
+| Stat | What earns it |
+|---|---|
+| INT | consuming meaningful content (philosophy, business, self-improvement) in any form: books, videos, podcasts, studying |
+| STR | anything physical: gym, running, sports, yoga |
+| ARC | anything creative: singing, music, painting, drawing, cooking |
+| END | meaningful action and execution: shooting/editing videos, building websites, projects, writing scripts, researching |
+| WIS | only meditation and self-reflection |
+
+- Listed activities carry a `stat` in `data/activities.json` (podcast / business video / books / study for growth = int, gym = str, shorts creation = end). If the AI scores one of them in a different stat, the server moves its points to the right one (`services/groq.js`).
+- Writing a script / plan / code for a project is real work (END), not the private listed "writing" activity.
 
 ## Archetypes (Tarnished / Elden Lord)
 Registration has three steps: account -> **character** -> **archetype**. An archetype is a rule set that decides what is Signal and what is Noise for that player. It is chosen once and cannot be changed (`409`), like the character.
@@ -65,7 +89,7 @@ Registration has three steps: account -> **character** -> **archetype**. An arch
 | `liberal` = **Tarnished** | easy | Everything except distractions is Signal. School, institutions, studying, chores, meals, exercise... are Signal. Scrolling, web series, video games and other time-wasters are Noise. |
 | `radical` = **Elden Lord** | hard | The configuration the site had before archetypes existed (`data/activities.json` exactly as it is): only growth is Signal; school, tuition, chores, meals, resting, games, scrolling and series are Noise. |
 
-- Everything lives in `data/archetypes.json` (`services/archetypes.js` loads it). It holds the simple-language texts the registration screen shows (served by `GET /api/archetypes`), the AI prompt rules (`{{ARCHETYPE_RULES}}` in `prompts/journalPrompt.txt`) and, for liberal, `overrides` (listed activities that flip to Signal, by id) and `noPoints` (routine basics: Signal for the ratio, but 0 points). Radical has no overrides, so it behaves exactly as before.
+- Everything lives in `data/archetypes.json` (`services/archetypes.js` loads and checks it at start-up). Every archetype has the same fixed blocks: `key`, `name`, `mode`, `display` (registration screen texts: summary, signal, noise), `counting` (`overrides`: listed activities that flip to Signal, by id; `noPoints`: routine basics, Signal for the ratio but 0 points) and `prompt` (`signal`, `noise`, `notes[]`, built into `{{ARCHETYPE_RULES}}` in `prompts/journalPrompt.txt`). Radical has no overrides, so it behaves exactly as before.
 - Sleep stays a Necessity and the private **Unknown** activities stay Noise in every archetype.
 - `data/activities.json` is still the single source of truth for the listed activities; an archetype only overrides the ids it names. `classify(..., archetype)` in `services/activities.js` applies it.
 - Players who have no archetype (registered before this existed) count as **radical** and get the picker at their next login. Every journal stores the archetype it was written in (`Journal.archetype`), so a saved day is always shown the way it was counted.
@@ -122,11 +146,11 @@ A journal is refused (400, nothing saved, no points) unless every activity has a
 The script patches the export (anchored edits, fails loudly if the design changed too much) and writes `public/index.html`. The day navigation and calendar live in `tools/journal_block.js` (journal page), `tools/glue.js` (loading data, switching players), `tools/auth.css` (styles) and `tools/frontend_patches.py` (fullscreen button). What it changes:
 - "Edit Stats" button and panel removed; that slot is now a "Log out" button. Stats only change through journals.
 - Login / register panel in the same parchment style. Name is limited to 16 characters (the stats panel is small).
-- Left stats panel shows the logged-in player. The right sidebar has **five player cards**: one card per character, always in this order for everyone: Mira, The Noble (red-haired girl), The Dice Lord, The Scholar, Pip. Click a card to look at that player; the stats panel and the journal switch to them. When you log in your own card is selected. A character nobody has chosen yet is shown normally, but the mouse pointer on it is "not-allowed" and clicking does nothing. The order is `ORDER` in `tools/glue.js`. Stats, level and title come from the server.
+- Left stats panel shows the logged-in player. The right sidebar has **six player cards**: one card per character, always in this order for everyone: Mira, The Noble (red-haired girl), The Dice Lord, The Scholar, The Crimson Lord, The Duchess. Click a card to look at that player; the stats panel and the journal switch to them. When you log in your own card is selected. A character nobody has chosen yet is shown normally, but the mouse pointer on it is "not-allowed" and clicking does nothing. The order is `ORDER` in `tools/glue.js`. Stats, level and title come from the server.
 - Journal page: shows the viewed player's journal for the date in the date field. Change the date by typing it (dd/mm/yyyy), with the `<` `>` buttons, or with the **Calendar** button. Opening the journal always starts on today.
 - One entry per day: an empty day you may write on is editable (unsent text is remembered per day). A saved day is locked and shows only the signal/noise pie, the points of that day (Growth) and the activity log (without sleep) - never the saved text.
 - **Calendar**: a parchment panel with the month. Days with a journal show the points gained and a small green/red signal/noise bar. Click a day to see its signal/noise ratio, points gained and every task; "View this day" jumps to that day (double-click a day does the same). Future days are greyed out.
-- **Other players**: the five player cards at the right stay clickable while the journal is open. Click a player's card and the journal, calendar and every past day switch to that player, read-only.
+- **Other players**: the six player cards at the right stay clickable while the journal is open. Click a player's card and the journal, calendar and every past day switch to that player, read-only.
 - The **Reminders** and **Achievements** tabs open a full-screen picture (`public/ui/reminders.png`, `achievements.png`), no functions yet; click or press Esc to close.
 - The bottom-right **Fullscreen** button (YouTube-style four-corner icon, tooltip "Fullscreen" / "Exit fullscreen") really toggles fullscreen and keeps its icon in sync when you leave with Esc or the browser's controls. The login screen has its own fullscreen button (bottom right), so fullscreen works before logging in.
 - Level is computed on the server from total points (`THRESHOLDS`/`TITLES` in `models/Player.js`).

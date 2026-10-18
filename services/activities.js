@@ -95,7 +95,7 @@ const toModelText = (text) => String(text || '').replace(UNKNOWN_RE, 'personal t
 
 // Keeps a task name within MAX_NAME characters, cutting at a word boundary when there is one.
 function limitName(name) {
-  const n = String(name == null ? '' : name).replace(/\s+/g, ' ').trim();
+  const n = String(name == null ? '' : name).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
   if (n.length <= MAX_NAME) return n;
   const cut = n.slice(0, MAX_NAME);
   const i = cut.lastIndexOf(' ');
@@ -112,11 +112,25 @@ function classify({ activity, name, type }, archetype) {
       return { activity: UNKNOWN_ID, name: UNKNOWN_LABEL, type: 'noise', category: 'Unknown', image: emojiCatalogue.privateUrl, fixed: true };
     }
     const e = effective(a, archetype);
-    return { activity: a.id, name: a.label, type: e.tracking.toLowerCase(), category: e.journal, image: a.image || null, fixed: true, noPoints: e.noPoints };
+    return { activity: a.id, name: a.label, type: e.tracking.toLowerCase(), category: e.journal, image: a.image || null, fixed: true, noPoints: e.noPoints, stat: a.stat || null };
   }
   // not on the list: keep the model's own judgement (necessity = old sleep type = noise)
   const t = norm(type) === 'signal' ? 'signal' : 'noise';
   return { activity: 'other', name: null, type: t, category: t === 'signal' ? 'Signal' : 'Noise', image: null, fixed: false };
 }
 
-module.exports = { MAX_NAME, limitName, ACTIVITIES, UNKNOWN_LABEL, UNKNOWN_ID, findById, findByName, promptCatalogue, toModelText, classify, defaultEmoji };
+// The short "what I did" text shown when the player hovers a task name. One line, plain text, never longer than MAX_DESC.
+const MAX_DESC = cfg.maxDescriptionLength || 140;
+const hasPrivateTerm = (text) => UNKNOWN_RE_TEST.test(String(text || ''));
+function limitText(text, max = MAX_DESC) {
+  const t = String(text == null ? '' : text).replace(/[<>]/g, '').replace(/\s+/g, ' ').trim();
+  if (t.length <= max) return t;
+  const cut = t.slice(0, max - 1);
+  const i = cut.lastIndexOf(' ');
+  return (i >= Math.floor(max / 2) ? cut.slice(0, i) : cut).replace(/[\s,;:\-–]+$/, '') + '…';
+}
+// A usable task name: not empty and not a placeholder like "Activity" / "Task" / "Untitled".
+const GENERIC_NAME = /^(?:untitled(?: activity)?|activity|task|other|misc(?:ellaneous)?|stuff|things?|unknown activity|n\/a|none)$/i;
+const isGoodName = (n) => !!limitName(n) && !GENERIC_NAME.test(limitName(n));
+
+module.exports = { MAX_NAME, MAX_DESC, limitName, limitText, hasPrivateTerm, isGoodName, ACTIVITIES, UNKNOWN_LABEL, UNKNOWN_ID, findById, findByName, promptCatalogue, toModelText, classify, defaultEmoji };

@@ -5,7 +5,7 @@ const path = require('path');
 
 const CHARACTERS = cfg.characters;
 const KEYS = CHARACTERS.map((c) => c.key);
-const MAX_PLAYERS = Math.max(1, parseInt(process.env.MAX_PLAYERS, 10) || 5);
+const MAX_PLAYERS = Math.max(1, parseInt(process.env.MAX_PLAYERS, 10) || 6);
 const FULL_MESSAGE = 'The Grove is full. Talk to the admins to get your spot.';
 
 for (const c of CHARACTERS) {

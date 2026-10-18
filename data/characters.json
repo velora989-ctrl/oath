@@ -1,10 +1,11 @@
 {
-  "_readme": "The playable characters. One per player (nobody can pick a character that is already taken). face = the big portrait in the stats panel, icon = the small picture on the player card (top right). Files live in public/characters/. The Grove holds at most as many players as MAX_PLAYERS (default 5), so keep at least that many characters here.",
+  "_readme": "The playable characters. One per player (nobody can pick a character that is already taken). face = the big portrait in the stats panel, icon = the small picture on the player card (top right). Files live in public/characters/. The Grove holds at most as many players as MAX_PLAYERS (default 6), so keep at least that many characters here.",
   "characters": [
     { "key": "mira",    "name": "Mira",          "face": "/characters/mira.png",    "icon": "/characters/mira_icon.png" },
-    { "key": "pip",     "name": "Pip",           "face": "/characters/pip.png",     "icon": "/characters/pip_icon.png" },
+    { "key": "crimson", "name": "The Crimson Lord", "face": "/characters/crimson.png", "icon": "/characters/crimson_icon.png" },
     { "key": "dice",    "name": "The Dice Lord", "face": "/characters/dice.png",    "icon": "/characters/dice_icon.png" },
     { "key": "scholar", "name": "The Scholar",   "face": "/characters/scholar.png", "icon": "/characters/scholar_icon.png" },
-    { "key": "noble",   "name": "The Noble",     "face": "/characters/noble.png",   "icon": "/characters/noble_icon.png" }
+    { "key": "noble",   "name": "The Noble",     "face": "/characters/noble.png",   "icon": "/characters/noble_icon.png" },
+    { "key": "duchess", "name": "The Duchess",   "face": "/characters/duchess.png", "icon": "/characters/duchess_icon.png" }
   ]
 }

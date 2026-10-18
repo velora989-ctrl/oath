@@ -96,12 +96,12 @@ function presentTask(t, archetype) {
   // points already granted for other old tasks are never changed behind the player's back.
   const legacy = !t.activity;
   if (legacy && c.fixed && c.category !== 'Unknown' && c.activity !== 'sleep') c = classify({ type: t.type }, archetype);
-  const base = { emoji: t.emoji, name: limitName(t.name), duration: displayDuration(t.duration), points: t.points };
+  const base = { emoji: t.emoji, name: limitName(t.name), description: t.description || '', duration: displayDuration(t.duration), points: t.points };
   if (c.fixed && c.category === 'Unknown') {
-    return { ...base, emoji: c.image, name: c.name, type: 'noise', category: 'Noise', activity: c.activity, points: { int: 0, end: 0, str: 0, arc: 0, wis: 0 } };
+    return { ...base, emoji: c.image, name: c.name, description: '', type: 'noise', category: 'Noise', activity: c.activity, points: { int: 0, end: 0, str: 0, arc: 0, wis: 0 } };
   }
   // the image: a fixed one from activities.json, else the one saved with the task (old placeholder icons are replaced by name)
-  if (c.fixed) return { ...base, name: c.name, emoji: c.image || emojiCatalogue.reuse({ stored: t.emoji, name: c.name }), type: c.type, category: c.category, activity: c.activity, points: c.type === 'signal' ? t.points : { int: 0, end: 0, str: 0, arc: 0, wis: 0 } };
+  if (c.fixed) return { ...base, name: c.activity === 'sleep' || legacy ? c.name : limitName(t.name) || c.name, emoji: c.image || emojiCatalogue.reuse({ stored: t.emoji, name: c.name }), type: c.type, category: c.category, activity: c.activity, points: c.type === 'signal' ? t.points : { int: 0, end: 0, str: 0, arc: 0, wis: 0 } };
   return { ...base, emoji: emojiCatalogue.reuse({ stored: t.emoji, name: t.name }), type: c.type, category: c.category, activity: c.activity };
 }
 

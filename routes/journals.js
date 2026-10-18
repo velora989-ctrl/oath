@@ -6,6 +6,7 @@ const Journal = require('../models/Journal');
 const Player = require('../models/Player');
 const { analyzeJournal } = require('../services/groq');
 const archetypes = require('../services/archetypes');
+const { flattenJournal } = require('../services/journalText');
 const { STATS, computeDay, checkDay, journalView, isRealDate, isFutureDate, todayUTC } = require('../services/dayStats');
 
 const router = express.Router();
@@ -28,7 +29,8 @@ const niceDate = (d) => d.split('-').reverse().join('/');
 // delete the day's journal first if you really want to rewrite it.
 router.post('/', auth, analyzeLimiter, async (req, res, next) => {
   try {
-    const text = String(req.body.text || '').trim();
+    // every line break becomes ". " so the journal is one paragraph (what is saved and what the AI reads)
+    const text = flattenJournal(req.body.text);
     if (text.length < 5) return res.status(400).json({ error: 'Write a bit more in your journal first' });
     if (text.length > 5000) return res.status(400).json({ error: 'Journal is too long (max 5000 characters)' });
 

@@ -9,6 +9,11 @@ Every activity is `signal` or `noise`, with ONE exception: sleep is `necessity`.
 
 {{ARCHETYPE_RULES}}
 
+MIXED BLOCKS (signal + noise in one block):
+- If ONE block of time combines a signal activity with a noise activity (for example "listening to a podcast while commuting", "audiobook while doing chores", "reading in the park"), the SIGNAL part wins. Classify the whole block as `signal`, name it after the signal part ("Podcast While Commuting"), set `activity` to the id of the SIGNAL part (or "other" if the signal part is not on the list), and give points for the signal part only. NEVER use the id of the noise part for a mixed block.
+- This does not apply when the player clearly did the two things one after the other with separate times; those are separate tasks.
+- Private / personal time is never rescued by this rule: it is always its own noise task.
+
 SLEEP:
 - Log sleep as its own task: "activity": "sleep", "name": "Sleep", "type": "necessity", zero points.
 - Never merge sleep with any other activity.
@@ -20,18 +25,21 @@ Follow the archetype rules above strictly. Do NOT default to signal. For each ac
 SECTION 2. POINTS
 ====================================================================
 Noise and necessity tasks always get zero points in every stat.
-Each signal task earns points in exactly ONE stat (the best fit):
-- int: studying, serious reading, learning, educational content, solving practice questions.
-- wis: meditation, reflection, spiritual practice.
-- arc: creative skills, music, art, cooking technique, dance.
-- str: deliberate physical training, gym, running, swimming, yoga, push-ups, mobility.
-- end: executing and shipping, building websites or code, uploading videos, business tasks, outreach.
+A signal task earns points in EVERY stat its activity truly involves (one stat, or several when the block really contains different kinds of effort). Use these exact definitions:
+- int (Intelligence): CONSUMING meaningful content, such as philosophy, business, self-improvement or knowledge, in ANY form: books, videos, podcasts, courses, studying and learning. A business YouTube video or podcast is ALWAYS int, never end.
+- str (Strength): anything physical: gym, running, walking for exercise, swimming, yoga, sports, push-ups, mobility.
+- arc (Arcane): anything creative: singing, making music, playing an instrument, painting, drawing, cooking, dance, design and other artistic work.
+- end (Endurance): taking meaningful ACTION and executing tasks: shooting or editing YouTube videos, building websites or apps, coding, creating projects, writing scripts, researching, business outreach. Watching or listening to content is NOT end; making and doing is.
+- wis (Wisdom): ONLY meditation and self-reflection (including deliberate journaling about yourself). Nothing else earns wis.
 
-Scale: roughly 5 points per focused hour.
+How to split: if a block has one kind of effort, put all its points in that one stat. If it truly has two or more kinds (for example "gym then cooking", "researching and drawing"), split the points between the matching stats by how much time and effort each part took. Do not invent a second stat just to give more points.
+
+Scale (TOTAL across all stats of a task): roughly 5 points per focused hour.
 - 10-15 min = 1-2 points
 - 30 min = about 3 points
 - 1 hour = about 5 points
-- 2+ hours of deep effort = 7-8 points (maximum 8)
+- 2+ hours of deep effort = 7-8 points (maximum 8 in total per task, never 8 per stat)
+Splitting across stats never creates extra points: the stats of one task add up to the scale above.
 Stay consistent with these previous evaluations of this player:
 {{PREVIOUS_EVALUATIONS}}
 
@@ -42,7 +50,7 @@ SECTION 3. TIMELINE AND DURATIONS (follow these steps in order)
 STEP 1. ONE TIME RANGE = ONE TASK.
 Every explicit time range in the journal (for example "7:00am to 12:00pm") becomes EXACTLY ONE task. Its duration is the length of that range, nothing more and nothing less.
 - If a range lists several activities ("getting ready, bathing and doing chores"), combine them into one task with one combined name, covering the whole range. Never split a range into several tasks. Never repeat a range's duration on a second task.
-- Choose the type by the main activity of the range. If it mixes signal and noise and you cannot tell which dominates, use the first listed activity.
+- Choose the type by the main activity of the range. If it mixes signal and noise, it is signal (see MIXED BLOCKS in section 1). If it mixes only signal activities or only noise activities, use the one that took the most time, or the first listed one if you cannot tell.
 - Do not create two tasks for the same time range. Never double-count a period of time.
 
 STEP 2. COMPUTE DURATIONS YOURSELF.
@@ -79,16 +87,30 @@ Below are the listed activities. Use an id ONLY if the journal literally says th
 - "a few push-ups" is NOT a gym session. "brushing teeth" is NOT bathing. "talking to a friend" is NOT a social event. When the player's words are not clearly the listed activity, use "other".
 - When unsure between an id and "other", always use "other".
 {{ACTIVITY_CATALOGUE}}
+- Writing a script, plan, post or code for a project (for example a YouTube script) is real work: use "other", signal, end points. It is not the listed "writing" activity.
 - A word that only gives the PURPOSE or DESTINATION does not make the task that activity. "Getting ready for school", "packing for school" or "bag for school" are morning routine / chores, NOT school. "Preparing for the gym" is NOT gym. Only use the `school` id when the player is actually in class, commuting to class or doing school work.
-- If a block mixes several activities, use the id of the MAIN activity. If none of them clearly matches, use "other".
+- If a block mixes several activities, use the id of the MAIN activity. If the block mixes signal and noise, the main activity is always the SIGNAL one. If none of them clearly matches, use "other".
 
 
 ====================================================================
 SECTION 6. OUTPUT FORMAT
 ====================================================================
 - NEVER add details the player did not write. Do not upgrade a small activity into a bigger one (push-ups into a workout, chores into cleaning, a chat into a meeting).
-- The `name` must use the player's own words ("Few Push-ups", "Brushing Teeth and Chores"), not an interpretation.
-- Points must match what was literally done. "A few push-ups" for 15 min earns 1 str point, not gym-session points.
+- Points must match what was literally done. "A few push-ups" for 15 min earns 1 str point, not gym-session points. Pick each stat by the definitions in section 2 (a business podcast = int, not end).
+
+NAMING (the `name` field, shown in the activity log):
+- 2 to 5 words, Title Case, at most 30 characters including spaces. Use the player's own words; name WHAT was done and, when the journal says it, the subject or object: "Stoicism Book Reading", "Gym: Chest Workout", "Business Podcast", "Cooking Pasta", "Math Homework".
+- Lead with the main activity. Never include times, durations, points or the words signal / noise in the name.
+- Never use vague placeholders such as "Activity", "Task", "Stuff", "Things", "Misc" or "Other". If the journal is vague ("did some stuff"), use the most concrete word the player wrote.
+- A block that mixes activities is named after the SIGNAL part first: "Podcast On Commute", "Audiobook While Cooking". A time range that lists several activities of the same kind may combine up to three of them: "Bath, Dressing & Chores". If they are too long, keep the main two.
+- Keep names consistent: the same activity written the same way on another day gets the same name.
+
+DESCRIPTION (the `description` field, shown when the player hovers the name):
+- ONE short sentence, at most 120 characters, saying what the player actually did in this block, in plain words, past tense. Example: "Listened to a business podcast on the way to school."
+- Only use facts from the journal (what, where, with what). Never add details, goals, feelings, praise or advice, and never mention points, signal, noise or stats.
+- It must say more than the name, not repeat it. If the journal gives nothing more, a short plain restatement of the block is fine.
+- For private / personal-time activities, and for any activity you hid behind a nonsense name, write an empty string "".
+
 Return exactly this structure:
 
 {
@@ -96,7 +118,8 @@ Return exactly this structure:
     {
       "activity": "<catalogue activity id, sleep, or other>",
       "emoji": "<image key from section 4, or empty string>",
-      "name": "<short descriptive 2-5 word title, at most 30 characters including spaces>",
+      "name": "<2-5 word Title Case name following the NAMING rules, at most 30 characters including spaces>",
+      "description": "<one short sentence following the DESCRIPTION rules, or empty string>",
       "type": "signal | noise | necessity",
       "duration": "<number> mins",
       "points": { "int": 0, "end": 0, "str": 0, "arc": 0, "wis": 0 }
@@ -105,8 +128,8 @@ Return exactly this structure:
 }
 
 Rules:
-- All five point fields must be present on every task.
-- A signal task may have points in only ONE stat. Noise and necessity tasks have all zeros.
+- All five point fields and the `description` field must be present on every task.
+- A signal task may have points in one or several stats (section 2); their total is at most 8. Noise and necessity tasks have all zeros.
 - Output tasks in the order they appear in the day (a wake-up Sleep task first, a bedtime Sleep task last).
 - The response must be syntactically valid JSON.
 

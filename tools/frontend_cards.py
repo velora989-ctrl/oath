@@ -14,9 +14,9 @@ def lit1(old, new, s):
 
 
 def apply(s):
-    s = lit1('["2", 1347, 1358, 254, 16],', '["2", 1347, 1358, 254, 16], ["3", 1347, 1358, 321, 16], ["4", 1347, 1358, 388, 16], ["5", 1347, 1358, 455, 16],', s)
-    s = lit1("[1333,216,117,65,'t']]", "[1333,216,117,65,'t'],[1333,283,117,65,'c'],[1333,350,117,65,'d'],[1333,417,117,65,'f']]", s)
+    s = lit1('["2", 1347, 1358, 254, 16],', '["2", 1347, 1358, 254, 16], ["3", 1347, 1358, 321, 16], ["4", 1347, 1358, 388, 16], ["5", 1347, 1358, 455, 16], ["6", 1347, 1358, 522, 16],', s)
+    s = lit1("[1333,216,117,65,'t']]", "[1333,216,117,65,'t'],[1333,283,117,65,'c'],[1333,350,117,65,'d'],[1333,417,117,65,'f'],[1333,484,117,65,'g']]", s)
     s = lit1("{j:'Journal',r:'Reminders',a:'Achievements',u:'Undo',e:'Fullscreen',s:'Mira',t:'Pip'}[k]",
-             "{j:'Journal',r:'Reminders',a:'Achievements',u:'Undo',e:'Fullscreen',s:'Player 1',t:'Player 2',c:'Player 3',d:'Player 4',f:'Player 5'}[k]", s)
-    s = lit1("else if(k==='s'||k==='t')pick(k==='s'?0:1)", "else if('stcdf'.indexOf(k)>=0)pick('stcdf'.indexOf(k))", s)
+             "{j:'Journal',r:'Reminders',a:'Achievements',u:'Undo',e:'Fullscreen',s:'Player 1',t:'Player 2',c:'Player 3',d:'Player 4',f:'Player 5',g:'Player 6'}[k]", s)
+    s = lit1("else if(k==='s'||k==='t')pick(k==='s'?0:1)", "else if('stcdfg'.indexOf(k)>=0)pick('stcdfg'.indexOf(k))", s)
     return s

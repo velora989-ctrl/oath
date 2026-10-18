@@ -16,6 +16,7 @@ const taskSchema = new mongoose.Schema(
   {
     emoji: { type: String, required: true }, // url from the catalogue
     name: { type: String, required: true },
+    description: { type: String, default: '', maxlength: 200 }, // short "what I did", shown when hovering the name (empty for Unknown / old entries)
     // TRACKING class, used by every ratio / total / chart: 'signal' or 'noise'.
     // 'necessity' = sleep: hidden from the activity log, left out of the signal/noise ratio.
     type: { type: String, enum: ['signal', 'noise', 'necessity'], required: true },

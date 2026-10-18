@@ -2,6 +2,9 @@
 const $j=s=>JP.querySelector(s),ta=$('#jta'),pad2=n=>String(n).padStart(2,'0');
 const SN={int:'INT',str:'STR',end:'END',arc:'ARC',wis:'WIS'};
 const escA=t=>String(t==null?'':t).replace(/[<>&"']/g,'');
+/* hover text (tooltip) of a task: its name, then what the player did. Keeps apostrophes, only HTML-escapes. */
+const escT=t=>String(t==null?'':t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const tip=x=>escT(x.description?x.name+'\n'+x.description:x.name);
 function dKey(){const i=document.querySelector('#jdate'),m=/^\s*(\d{1,2})[\/.\-](\d{1,2})[\/.\-](\d{4})\s*$/.exec(i?i.value:DS)||/(\d{2})\/(\d{2})\/(\d{4})/.exec(DS);return m[3]+'-'+pad2(m[2])+'-'+pad2(m[1])}
 /* A task called "Unknown" keeps that name (and its neutral image) but is a NOISE task everywhere: red marker in the
    activity log, red "Noise" badge in the calendar, red part of the pie (the server counts it as noise). */
@@ -11,7 +14,7 @@ const catOf=x=>x.type==='signal'?'signal':(x.type==='necessity'?'necessity':'noi
 function mins(d){const s=String(d==null?'':d);let t=0,f=false;s.replace(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)(?![a-z])/gi,(m,n,u)=>{f=true;t+=/^h/i.test(u)?Number(n)*60:Number(n);return m});
  if(!f)return s;return fmtMin(t)}
 function rowHTML(x){const sg=x.type==='signal',bk=sg?'signa':'noise',[bw,bh]=P[bk],pts=Object.keys(SN).filter(k=>x.points&&x.points[k]>0).map(k=>'+'+x.points[k]+' '+SN[k]).join(', ');
-return`<div class="jr" title="${escA(pts||catOf(x))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn" title="${escA(x.name)}">${escA(x.name)}</span><img src="${IM[bk]}" alt="" style="left:${1036-785-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px"><span class="jt">${escA(mins(x.duration))}</span></div>`}
+return`<div class="jr" title="${escA(pts||catOf(x))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn" title="${tip(x)}">${escA(x.name)}</span><img src="${IM[bk]}" alt="" style="left:${1036-785-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px"><span class="jt">${escA(mins(x.duration))}</span></div>`}
 
 /* ---------- full task names ----------
    The server limits a task name to 30 characters. The name box (172px) is never cut with "...": the text is made
@@ -118,7 +121,7 @@ function calSummary(){
   h+='<div class="csn"><div class="cbar"><i style="width:'+s+'%"></i></div><div class="cbl"><span>Signal '+s+'%</span><span>Noise '+(100-s)+'%</span></div><div class="cmn">'+fmtMin(e.signalMinutes)+' signal / '+fmtMin(e.noiseMinutes)+' noise'+(e.necessityMinutes>0?' &middot; '+fmtMin(e.necessityMinutes)+' sleep (not counted)':'')+'</div></div>'+
    '<div class="cpt"><b>Points gained: +'+e.totalPoints+'</b>'+(pts?'<div>'+pts+'</div>':'')+'</div>'+
    '<div class="ctl">'+e.tasks.map(t=>{const nc=t.type==='necessity',sg=!nc&&t.type==='signal',p=Object.keys(SN).filter(x=>t.points&&t.points[x]>0).map(x=>' +'+t.points[x]+' '+SN[x]).join('');
-    return'<div class="ct '+(nc?'nc':sg?'sg':'nz')+'"><img src="'+escA(t.emoji)+'" alt=""><span class="cn1">'+escA(t.name)+'</span><span class="cd">'+escA(mins(t.duration))+'</span><span class="cb">'+(nc?'Necessity':sg?'Signal'+escA(p):'Noise')+'</span></div>'}).join('')+'</div>'}
+    return'<div class="ct '+(nc?'nc':sg?'sg':'nz')+'"><img src="'+escA(t.emoji)+'" alt=""><span class="cn1" title="'+tip(t)+'">'+escA(t.name)+'</span><span class="cd">'+escA(mins(t.duration))+'</span><span class="cb">'+(nc?'Necessity':sg?'Signal'+escA(p):'Noise')+'</span></div>'}).join('')+'</div>'}
  if(k<=todayKey()&&(e||WHO.mine||WHO.id))h+='<button class="jnav" id="jco">'+(e?'View this day':(WHO.mine?'Write this day':'Open this day'))+'</button>';
  box.innerHTML=h;const b=$c('#jco');if(b)b.onclick=()=>{calClose();go(k)}}
 async function calLoad(){

@@ -9,7 +9,7 @@ const toCH=p=>({id:p.id,n:p.name,lv:p.level,t:p.title,v:{...p.stats},ch:p.charac
 /* characters: the catalogue (data/characters.json) comes from the server; every player's portrait is their own character */
 let CHARS=[];const cOf=k=>CHARS.find(c=>c.key===k)||null;
 async function loadChars(){try{CHARS=await A.getCharacters()}catch(e){}}
-const FACEEL=q('#face'),NSLOT=5,CARD0=149,CARDSTEP=67;   /* five player cards in the right sidebar, 67px apart */
+const FACEEL=q('#face'),NSLOT=6,CARD0=149,CARDSTEP=67;   /* five player cards in the right sidebar, 67px apart */
 /* the design draws two cards (top 149 and 216); the other three are copies of the second one, placed below it */
 {const frame=q('#stage img.ui[style*="left:1333px"][style*="top:216px"]');
  for(let i=2;i<NSLOT;i++){const c=frame.cloneNode(true);c.style.top=(CARD0+CARDSTEP*i)+'px';frame.parentNode.insertBefore(c,frame.nextSibling)}}
@@ -27,7 +27,7 @@ window.groveToast=m=>{tt.textContent=m;tt.style.display='block';clearTimeout(tmr
 
 /* five cards in a FIXED order (the same for everybody): one card per character. A card whose character nobody has chosen
    yet shows the character normally, but the mouse pointer on it is "not-allowed" and clicking does nothing. */
-const ORDER=['mira','noble','dice','scholar','pip'];
+const ORDER=['mira','noble','dice','scholar','crimson','duchess'];
 const plOf=k=>PLAYERS.find(p=>p.character===k)||null;
 const myIdx=()=>Math.max(0,ORDER.indexOf(ME&&ME.character));
 function apply(){for(let i=0;i<NSLOT;i++){const p=plOf(ORDER[i]);CH[i]=p?toCH(p.id===ME.id?ME:p):{...EMPTY}}CUR=CH[ci];Object.assign(V,CUR.v);K.forEach(draw);STATRUN()}

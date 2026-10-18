@@ -2,9 +2,10 @@ const fs = require('fs');
 const path = require('path');
 const Journal = require('../models/Journal');
 const { computeDay, displayDuration } = require('./dayStats');
-const { promptCatalogue, toModelText, classify, limitName } = require('./activities');
+const { promptCatalogue, toModelText, classify, limitName, limitText, hasPrivateTerm, isGoodName } = require('./activities');
 const emojiCatalogue = require('./emojis');
 const archetypes = require('./archetypes');
+const { flattenJournal } = require('./journalText');
 
 const PROMPT_TEMPLATE = fs.readFileSync(path.join(__dirname, '../prompts/journalPrompt.txt'), 'utf8');
 const STATS = ['int', 'end', 'str', 'arc', 'wis'];
@@ -29,9 +30,9 @@ async function previousEvaluationsText(playerId) {
       const key = t.name.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      const stat = STATS.find((k) => t.points?.[k] > 0);
-      if (!stat) continue;
-      lines.push(`- "${t.name}" (${t.duration}) -> ${stat}=${t.points[stat]}`);
+      const given = STATS.filter((k) => t.points?.[k] > 0).map((k) => `${k}=${t.points[k]}`);
+      if (!given.length) continue;
+      lines.push(`- "${t.name}" (${t.duration}) -> ${given.join(', ')}`);
       if (lines.length >= 25) break;
     }
     if (lines.length >= 25) break;
@@ -133,22 +134,51 @@ function parseJson(text) {
 
 const zeroPoints = () => ({ int: 0, end: 0, str: 0, arc: 0, wis: 0 });
 
+// One task earns at most MAX_POINTS_PER_TASK in total, however many stats it is spread over.
+// Over the limit, every stat is scaled down together so the split stays the same.
+function capTotal(points) {
+  const sum = () => STATS.reduce((a, k) => a + points[k], 0);
+  const total = sum();
+  if (total <= MAX_POINTS_PER_TASK) return;
+  const f = MAX_POINTS_PER_TASK / total;
+  for (const k of STATS) if (points[k] > 0) points[k] = Math.max(1, Math.floor(points[k] * f));
+  while (sum() > MAX_POINTS_PER_TASK) { // flooring to at least 1 can still leave it over: trim the biggest stat
+    const big = STATS.reduce((a, k) => (points[k] > points[a] ? k : a), STATS[0]);
+    points[big] -= 1;
+  }
+}
+
 function sanitizeTask(raw, archetype) {
   // The listed activities are classified by the server from data/activities.json (the model's own
   // signal/noise guess is ignored for them). Unlisted activities keep the model's signal/noise judgement.
   const c = classify({ activity: raw?.activity, name: raw?.name, type: raw?.type }, archetype);
-  const name = limitName(c.name || raw?.name || 'Untitled activity') || 'Untitled activity'; // at most MAX_NAME characters
+  // Name: Unknown and sleep keep their fixed label. Every other task (listed or not) is named by the model from the
+  // player's own words, so the activity log says what was really done ("Podcast On Commute", not just "YouTube podcast").
+  // The listed label is only the fallback when the model's name is missing or a placeholder.
+  const useModelName = !(c.category === 'Unknown' || c.activity === 'sleep') && isGoodName(raw?.name);
+  const name = limitName(useModelName ? raw.name : c.name || raw?.name || 'Untitled activity') || 'Untitled activity'; // at most MAX_NAME characters
+  // Description (hover text): one short line of what the player did. Never kept for Unknown tasks or anything that
+  // mentions a private word, so private activities can never leak through it.
+  const rawDesc = limitText(raw?.description);
+  const description = c.category === 'Unknown' || hasPrivateTerm(rawDesc) ? '' : rawDesc;
   const type = c.type; // tracking class: 'signal' | 'noise' (Unknown activities are noise)
   const points = zeroPoints();
 
   if (type === 'signal' && !c.noPoints) { // noPoints: routine basics of the liberal archetype are signal but earn nothing
-    // single-stat rule: keep only the strongest stat, capped
-    let best = null;
+    // A task can earn points in SEVERAL stats (e.g. gym + cooking in one block = str + arc).
+    let given = {};
     for (const k of STATS) {
       const v = Math.round(Number(raw?.points?.[k]));
-      if (Number.isFinite(v) && v > 0 && (!best || v > best.v)) best = { k, v };
+      if (Number.isFinite(v) && v > 0) given[k] = v;
     }
-    if (best) points[best.k] = Math.min(best.v, MAX_POINTS_PER_TASK);
+    // Stat guard: a listed activity belongs to one stat (podcast / business video / books = int, gym = str, ...).
+    // If the model gave it nothing there (say a business podcast scored as END), its points move to the right stat.
+    if (c.stat && !(given[c.stat] > 0)) {
+      const sum = Object.values(given).reduce((a, b) => a + b, 0);
+      given = sum > 0 ? { [c.stat]: sum } : given;
+    }
+    for (const k of Object.keys(given)) points[k] = given[k];
+    capTotal(points);
   }
 
   // image (services/emojis.js): Unknown -> the private image; listed activity -> its fixed image from
@@ -158,6 +188,7 @@ function sanitizeTask(raw, archetype) {
   return {
     emoji, // Unknown always gets the neutral image
     name,
+    description,
     type,
     activity: c.activity, // 'unknown' for every Unknown activity, never the specific one
     category: c.category === 'Unknown' ? 'Noise' : c.category, // journal category: Signal | Noise (an Unknown task is Noise)
@@ -176,7 +207,7 @@ function sanitize(parsed, archetype) {
 
 async function analyzeJournal(journalText, playerId, archetype) {
   const systemPrompt = await buildSystemPrompt(playerId, archetype);
-  const raw = await callGroq(systemPrompt, toModelText(journalText));
+  const raw = await callGroq(systemPrompt, toModelText(flattenJournal(journalText))); // one paragraph, no line breaks
   const result = sanitize(parseJson(raw), archetype);
   const day = computeDay(result.tasks);
   console.log('SANITIZED TASK COUNT:', result.tasks.length);
@@ -191,4 +222,4 @@ async function analyzeJournal(journalText, playerId, archetype) {
   return result;
 }
 
-module.exports = { analyzeJournal };
+module.exports = { analyzeJournal, sanitize };
