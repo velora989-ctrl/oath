@@ -46,6 +46,8 @@ async function buildSystemPrompt(playerId, archetype) {
   const catalogue = emojiCatalogue.promptCatalogue();
   const activities = promptCatalogue(archetype);
   // function replacers so "$" in the text is never treated as a special pattern
+  console.log('ARCHETYPE:', archetype);
+  console.log(archetypes.get(archetype).rules);
   return PROMPT_TEMPLATE.replace('{{ARCHETYPE_RULES}}', () => archetypes.get(archetype).rules)
     .replace('{{ACTIVITY_CATALOGUE}}', () => activities)
     .replace('{{EMOJI_CATALOGUE}}', () => catalogue)
@@ -58,6 +60,7 @@ async function callGroqModel(model, key, systemPrompt, journalText) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 60_000);
   try {
+
     const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
@@ -65,12 +68,15 @@ async function callGroqModel(model, key, systemPrompt, journalText) {
       body: JSON.stringify({
         model,
         temperature: 0.3,
-        response_format: { type: 'json_object' }, // JSON mode (the prompt already says "JSON")
+        max_completion_tokens: 8000,      // room for reasoning + JSON output
+        reasoning_effort: 'low',          // gpt-oss supports low | medium | high
+        response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: systemPrompt },
-          { role: 'user', content: `JOURNAL:\n${journalText}` },
+          { role: 'user', content: `JOURNAL:\n${journalText}` }
         ],
       }),
+
     });
     if (!res.ok) {
       const err = new Error(`Groq HTTP ${res.status} (${model}): ${(await res.text()).slice(0, 300)}`);
@@ -78,8 +84,18 @@ async function callGroqModel(model, key, systemPrompt, journalText) {
       throw err;
     }
     const data = await res.json();
-    const text = data.choices?.[0]?.message?.content;
-    if (!text) throw new Error(`Empty Groq response (${model})`);
+    const choice = data.choices?.[0];
+    const text = choice?.message?.content;
+    if (!text || !text.trim()) {
+      console.error('Empty Groq response:', {
+        model,
+        finish_reason: choice?.finish_reason,
+        usage: data.usage,
+        hasReasoning: !!choice?.message?.reasoning,
+        journalLen: journalText?.length,
+      });
+      throw new Error(`Empty Groq response (${model}, finish=${choice?.finish_reason})`);
+    }
     return text;
   } finally {
     clearTimeout(timer);
@@ -162,6 +178,15 @@ async function analyzeJournal(journalText, playerId, archetype) {
   const systemPrompt = await buildSystemPrompt(playerId, archetype);
   const raw = await callGroq(systemPrompt, toModelText(journalText));
   const result = sanitize(parseJson(raw), archetype);
+  const day = computeDay(result.tasks);
+  console.log('SANITIZED TASK COUNT:', result.tasks.length);
+  console.log('SIGNAL MINUTES:', day.signalMinutes);
+  console.log('NOISE MINUTES:', day.noiseMinutes);
+  console.log('SLEEP MINUTES:', day.necessityMinutes);
+  console.log(
+    'TOTAL TRACKED HOURS:',
+    (day.signalMinutes + day.noiseMinutes + day.necessityMinutes) / 60
+  );
   if (result.tasks.length === 0) throw new Error('Model returned no tasks');
   return result;
 }

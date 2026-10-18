@@ -6,9 +6,9 @@
       "key": "liberal",
       "name": "Tarnished",
       "mode": "Easy mode",
-      "summary": "Still wandering the Lands Between, so almost everything useful in your day counts as Signal (good time). Only distractions count as Noise (wasted time).",
-      "signal": "School, studying, work, chores, meals, exercise, reading, family and everyday life",
-      "noise": "Scrolling, watching web series, playing video games and other time-wasters",
+      "summary": "Still wandering the Lands Between, so almost everything useful in your day counts as Signal (good time). Only distractions, including chatting or talking with anyone, count as Noise (wasted time).",
+      "signal": "School, studying, work, chores, meals, exercise, reading and everyday life",
+      "noise": "Scrolling, watching web series, playing video games, talking or chatting with friends or family, and other time-wasters",
       "overrides": {
         "school": "Signal",
         "tuition": "Signal",
@@ -21,8 +21,16 @@
         "dinner": "Signal",
         "park": "Signal"
       },
-      "noPoints": ["wake_up", "morning", "breakfast", "bath", "rest", "dinner", "park"],
-      "rules": "- **NOISE (distractions only):** scrolling social media or short videos, watching web series / shows / movies / casual entertainment videos, playing video games, any other mindless time-wasting, and personal time/private time/gooning/related things (anything called \"personal time\" is this category).\n- **SIGNAL:** EVERYTHING ELSE. School, classes, tuition, homework, studying, institutions, work, projects, household chores, cooking, cleaning, errands, family time, socializing, meals, bathing, morning routine, rest, walks, exercise, reading, learning, meditation, creative practice and so on. If an activity is not clearly a distraction, it is signal.\n- Routine basics (waking up, morning routine, breakfast, bath, dinner, rest, park) are signal but earn zero points.\n- School classes, tuition, homework and school study are signal in this mode."
+      "noPoints": [
+        "wake_up",
+        "morning",
+        "breakfast",
+        "bath",
+        "rest",
+        "dinner",
+        "park"
+      ],
+      "rules": "- **NOISE (distractions only):** scrolling social media or short videos, watching web series / shows / movies / casual entertainment videos, playing video games, talking / chatting / hanging out with ANYONE (friends, family, grandparents, relatives, anyone; calls, texts, in person), idle or aimless conversation, any other mindless time-wasting, and personal time/private time/gooning/related things (anything called \"personal time\" is this category).\n- **SIGNAL:** everything else that is not a distraction. School, classes, tuition, homework, studying, institutions, work, projects, household chores, cooking, cleaning, errands, meals, bathing, morning routine, rest, walks, exercise, reading, learning, meditation, creative practice and so on.\n- **TALKING:** any time spent talking, chatting, calling or hanging out with anyone is ALWAYS noise, regardless of who it is with and even if the player calls it \"catching up\" or \"family time\". The only exceptions are when talking happens during another activity that is signal on its own: a family meal is still a meal, and helping family with chores is still a chore.\n- Routine basics (waking up, morning routine, breakfast, bath, dinner, rest, park) are signal but earn zero points.\n- School classes, tuition, homework and school study are signal in this mode."
     },
     "radical": {
       "key": "radical",
