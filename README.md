@@ -155,3 +155,17 @@ The script patches the export (anchored edits, fails loudly if the design change
 - The bottom-right **Fullscreen** button (YouTube-style four-corner icon, tooltip "Fullscreen" / "Exit fullscreen") really toggles fullscreen and keeps its icon in sync when you leave with Esc or the browser's controls. The login screen has its own fullscreen button (bottom right), so fullscreen works before logging in.
 - Level is computed on the server from total points (`THRESHOLDS`/`TITLES` in `models/Player.js`).
 - The pie shows the day's signal/noise ratio (computed by the server from the task durations).
+
+## Game feel: sound effects + animation (`public/fx.js`, `public/fx.css`)
+Loaded last by `index.html` (and added by `tools/build_frontend.py`, so a rebuild keeps them). They only listen to the existing page; no design or backend code changed.
+- **Sounds** are synthesized live with the Web Audio API (no audio files): button hover/click, page flips, book open/close, footsteps and tile arrival, stat-up arpeggio, level-up fanfare, "quest logged" jingle, "analysing" bubbling, error bonk, typing ticks, calendar, login screens. Press **M** or use the speaker button (next to Undo, and on the login screen) to mute. The choice is remembered.
+- **Animation**: panels fly in after login, art buttons lift/squash, portrait and icons breathe, stat count-up with floating `+N`, LEVEL UP banner with confetti and screen shake, journal book opens/closes in 3D, activity rows and pie animate in, calendar cells pop, login panel drops in and shakes on errors.
+- **Particles** (canvas over the map): fireflies, falling leaves, mushroom spores, footstep dust, tile ripples, destination marker, glow under Mira.
+- `prefers-reduced-motion` turns off the big movement; sounds stay.
+
+## Clock times in the activity log
+Each activity-log row shows `9:00 – 11:00` (12-hour digits, no am/pm) and, to the right of it, the length (`2hr`). The log box is wider (it now reaches the page edge past the scrollbar).
+- The model returns `start` for every task (24h `HH:MM`, see `prompts/journalPrompt.txt`, "START TIME"). The server stores only the start (`Journal.tasks[].start`, minutes after midnight) and always computes the end as start + duration, so the two can never disagree. Past midnight wraps (`10:45 – 2:15`).
+- A task with no start from the model follows the previous task (the first starts at 12:00am), which is right for journals written as `2hr games, 3hr study`.
+- The API sends `start` and `time` (the display string) on every task, including the calendar's task list. Days saved before this change have no start, so they keep showing just the duration (no database change needed).
+- Helpers: `parseClock`, `fmtClock`, `fmtRange` in `services/dayStats.js`. Row layout: `rowHTML` in `tools/journal_block.js`, columns in `tools/auth.css`.

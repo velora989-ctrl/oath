@@ -1,98 +1,195 @@
-/* Mira's Grove - game feel (animations). Light on purpose: only opacity/transform, short, and off for reduced-motion. */
+/* =====================================================================
+   Mira's Grove - game feel: animations (fx.css)
+   Loaded AFTER the main <style>. Sounds + particles live in fx.js.
+   Individual transform properties (translate / scale / rotate) are used on
+   purpose, so nothing here fights the design's own `transform` rules.
+   ===================================================================== */
 
-/* ---- entrances ---- */
-@keyframes fxIntro{from{opacity:0}to{opacity:1}}
-@keyframes fxPop{0%{opacity:0;transform:translateY(14px) scale(.9)}60%{opacity:1;transform:translateY(-3px) scale(1.02)}100%{transform:none}}
-@keyframes fxPage{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+/* ---------- overlay layers (all inside #stage, so they scale with it) ---------- */
+#fxc{left:0;top:0;width:1472px;height:832px;pointer-events:none;z-index:40!important}
+#fxflash{left:0;top:0;width:1472px;height:832px;background:#fff;opacity:0;pointer-events:none;z-index:59!important}
+#fxflash.on{animation:fxFlash .55s ease-out}
+@keyframes fxFlash{0%{opacity:.6}100%{opacity:0}}
+
+/* the journal page hides unknown stage children while it is open: my layers must stay visible */
+#fxc,#fxflash,#fxlv,#fxsv,#fxsnd,.fx-float{visibility:visible!important}
+
+/* ---------- screen shake is done in fx.js with the Web Animations API on `translate` (zoom / scale of #stage stay untouched) ---------- */
+
+/* ---------- stage intro + logout ---------- */
+@keyframes fxStageIn{0%{filter:brightness(.3) saturate(.5);scale:1.06}100%{filter:none;scale:1}}
+#stage.fx-intro{animation:fxStageIn 1.1s ease-out}
+@keyframes fxStageOut{to{filter:brightness(.2) saturate(.3);scale:.96;opacity:.2}}
+#stage.fx-out{animation:fxStageOut .4s ease-in forwards}
+
+/* panels fly in from their edge and settle with a little overshoot */
+@keyframes fxInL{from{translate:-170px 0;opacity:0}45%{opacity:1}to{translate:0 0;opacity:1}}
+@keyframes fxInR{from{translate:170px 0;opacity:0}45%{opacity:1}to{translate:0 0;opacity:1}}
+@keyframes fxInB{from{translate:0 150px;opacity:0}45%{opacity:1}to{translate:0 0;opacity:1}}
+.fx-in-l{animation:fxInL .8s cubic-bezier(.2,1.45,.4,1) both;animation-delay:var(--d,0s)}
+.fx-in-r{animation:fxInR .8s cubic-bezier(.2,1.45,.4,1) both;animation-delay:var(--d,0s)}
+.fx-in-b{animation:fxInB .8s cubic-bezier(.2,1.45,.4,1) both;animation-delay:var(--d,0s)}
+
+/* ---------- idle life: icons breathe, portrait sways ---------- */
+@keyframes fxBreath{0%,100%{scale:1;rotate:-1.8deg}50%{scale:1.08;rotate:1.8deg}}
+.fx-breathe{animation:fxBreath 3.4s ease-in-out infinite;animation-delay:var(--bd,0s)}
+.fx-breathe.fx-in-l{animation:fxInL .8s cubic-bezier(.2,1.45,.4,1) both,fxBreath 3.4s ease-in-out infinite;animation-delay:var(--d,0s),var(--bd,0s)}
+.fx-breathe.fx-in-r{animation:fxInR .8s cubic-bezier(.2,1.45,.4,1) both,fxBreath 3.4s ease-in-out infinite;animation-delay:var(--d,0s),var(--bd,0s)}
+.fx-breathe.fx-in-b{animation:fxInB .8s cubic-bezier(.2,1.45,.4,1) both,fxBreath 3.4s ease-in-out infinite;animation-delay:var(--d,0s),var(--bd,0s)}
+#face{transform-origin:50% 100%}
+@keyframes fxFaceIdle{0%,100%{scale:1 1}50%{scale:1.012 1.03}}
+@keyframes fxFacePop{0%{scale:.55 .55;filter:brightness(2.4);rotate:-6deg}55%{scale:1.1 1.1;filter:brightness(1.25);rotate:2deg}100%{scale:1 1;filter:none;rotate:0deg}}
+#face.fx-face{animation:fxFaceIdle 4.2s ease-in-out infinite}
+#face.fx-face.pop{animation:fxFacePop .7s cubic-bezier(.2,1.5,.4,1),fxFaceIdle 4.2s ease-in-out .7s infinite}
+
+/* ---------- buttons painted into the art: lift on hover, squash on press ---------- */
+.ui,#fsi{transition:transform .17s cubic-bezier(.2,1.9,.4,1),filter .17s ease}
+.ui.fx-hot,#fsi.fx-hot{transform:translateY(-4px) scale(1.07);filter:drop-shadow(0 0 7px rgba(255,226,140,.95)) brightness(1.1)}
+.ui.fx-press,#fsi.fx-press{transform:translateY(2px) scale(.92);filter:brightness(.86);transition-duration:.06s}
+
+/* selected player card frame: glows, and glides between cards */
+@keyframes fxSelPulse{0%,100%{box-shadow:0 0 6px rgba(255,255,255,.6),0 0 0 rgba(255,226,140,0)}50%{box-shadow:0 0 16px rgba(255,255,255,.95),0 0 26px rgba(255,214,102,.75)}}
+.fx-sel{transition:top .32s cubic-bezier(.2,1.7,.4,1);animation:fxSelPulse 1.5s ease-in-out infinite}
+
+/* ---------- stat rows ---------- */
+.vl{transform-origin:100% 50%}
+.lb,.vl,.em{transition:filter .2s}
+@keyframes fxBump{0%{scale:1}30%{scale:1.8;color:#2c8a2c}60%{scale:.92}100%{scale:1}}
+.vl.fx-bump{animation:fxBump .65s cubic-bezier(.2,1.8,.4,1)}
+@keyframes fxIconBounce{0%{scale:1;rotate:0deg}28%{scale:1.9;rotate:-16deg}58%{scale:.88;rotate:9deg}100%{scale:1;rotate:0deg}}
+.em.fx-bounce{animation:fxIconBounce .7s cubic-bezier(.2,1.6,.4,1)}
+@keyframes fxDrop2{0%{scale:1}30%{scale:.7;color:#a12a1b}100%{scale:1}}
+.vl.fx-drop{animation:fxDrop2 .5s ease-out}
+
+/* ---------- floating numbers (+3 INT, points...) ---------- */
+.fx-float{left:0;top:0;translate:-50% -50%;pointer-events:none;z-index:55;white-space:nowrap;
+  font:34px/1 'Patrick Hand','Comic Sans MS',cursive;color:#ffe9a0;-webkit-text-stroke:6px #3a2a10;paint-order:stroke fill;
+  text-shadow:0 3px 0 #3a2a10;animation:fxFloat 1.3s cubic-bezier(.2,.8,.3,1) forwards}
+.fx-float.g{color:#c4f59a}
+.fx-float.big{font-size:52px}
+@keyframes fxFloat{0%{opacity:0;scale:.3;margin-top:0}10%{opacity:1;scale:1.6}22%{scale:1}70%{opacity:1}100%{opacity:0;margin-top:-84px;scale:1}}
+
+/* ---------- LEVEL UP banner ---------- */
+#fxlv{left:0;top:0;width:1472px;height:832px;pointer-events:none;z-index:60;display:none;overflow:hidden}
+#fxlv.on{display:block}
+#fxlv .rays{position:absolute;left:50%;top:44%;width:1700px;height:1700px;margin:-850px 0 0 -850px;
+  background:repeating-conic-gradient(from 0deg,rgba(255,226,140,.42) 0 6deg,rgba(255,226,140,0) 6deg 18deg);
+  -webkit-mask:radial-gradient(circle,#000 0,transparent 60%);mask:radial-gradient(circle,#000 0,transparent 60%);
+  animation:fxSpin 9s linear infinite,fxRaysIn 3s ease-out forwards}
+@keyframes fxSpin{to{rotate:360deg}}
+@keyframes fxRaysIn{0%{opacity:0}15%{opacity:1}75%{opacity:1}100%{opacity:0}}
+#fxlv .t1,#fxlv .t2{position:absolute;left:0;right:0;text-align:center;font-family:'Patrick Hand','Comic Sans MS',cursive;paint-order:stroke fill;white-space:nowrap}
+#fxlv .t1{top:31%;font-size:160px;line-height:1;color:#ffe9a0;-webkit-text-stroke:14px #3a2a10;text-shadow:0 9px 0 #3a2a10,0 0 46px #ffd24a;animation:fxLvText 3s cubic-bezier(.2,1.6,.4,1) forwards}
+#fxlv .t2{top:54%;font-size:64px;line-height:1;color:#f7edd6;-webkit-text-stroke:9px #3a2a10;text-shadow:0 5px 0 #3a2a10;animation:fxLvSub 3s cubic-bezier(.2,1.5,.4,1) forwards}
+@keyframes fxLvText{0%{scale:0;rotate:-14deg;opacity:0}14%{scale:1.4;rotate:3deg;opacity:1}24%{scale:1;rotate:0deg}84%{scale:1;opacity:1}100%{scale:1.25;opacity:0}}
+@keyframes fxLvSub{0%,16%{translate:0 70px;opacity:0;scale:.7}30%{translate:0 0;opacity:1;scale:1.1}38%{scale:1}84%{opacity:1}100%{translate:0 -20px;opacity:0}}
+
+/* ---------- "Quest logged" ribbon ---------- */
+#fxsv{left:50%;top:84px;translate:-50% 0;display:none;z-index:58;pointer-events:none;box-sizing:border-box;padding:8px 40px 10px;
+  border:2px solid #20180d;border-radius:12px;background:#eee0c6;white-space:nowrap;
+  box-shadow:inset 0 0 0 2px #fdfae7,inset 0 0 0 4px #cdbd9c,3px 5px 0 rgba(0,0,0,.4),0 0 30px rgba(255,214,102,.55);
+  font:40px/1.1 'Patrick Hand','Comic Sans MS',cursive;color:#2b2a26;text-align:center;-webkit-text-stroke:.4px #2b2a26}
+#fxsv small{display:block;font-size:26px;color:#3f5a2e;-webkit-text-stroke:.3px #3f5a2e}
+#fxsv.on{display:block;animation:fxBanner 2.8s cubic-bezier(.2,1.6,.4,1) forwards}
+@keyframes fxBanner{0%{translate:-50% -170px;opacity:0;scale:.8;rotate:-4deg}13%{translate:-50% 0;opacity:1;scale:1.1;rotate:1.5deg}20%{scale:1;rotate:0deg}82%{translate:-50% 0;opacity:1}100%{translate:-50% -150px;opacity:0}}
+
+/* ---------- sound button ---------- */
+#fxsnd,#fxsnda{box-sizing:border-box;padding:0;display:flex;align-items:center;justify-content:center;border:1.5px solid #20180d;border-radius:8px;background:#eee0c6;
+  box-shadow:inset 0 0 0 1.5px #fdfae7,inset 0 0 0 2.5px #cdbd9c,1px 2px 0 rgba(0,0,0,.35);cursor:pointer;transition:translate .12s,scale .12s,background .15s}
+#fxsnd{left:1182px;top:773px;width:40px;height:40px;z-index:45}
+#fxsnda{position:fixed;right:72px;bottom:18px;width:46px;height:46px;z-index:210}
+#fxsnd:hover,#fxsnda:hover{background:#e3d3aa;translate:0 -2px;scale:1.07}
+#fxsnd:active,#fxsnda:active{translate:0 1px;scale:.92}
+#fxsnd svg,#fxsnda svg{width:24px;height:24px;fill:none;stroke:#20180d;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+#fxsnda svg{width:26px;height:26px}
+
+/* ---------- journal book ---------- */
+@keyframes fxBookOpen{
+  0%{opacity:0;transform:perspective(1500px) rotateX(26deg) translateY(90px) scale(.78);filter:brightness(.5)}
+  55%{opacity:1;transform:perspective(1500px) rotateX(-4deg) translateY(-10px) scale(1.025);filter:brightness(1.15)}
+  78%{transform:perspective(1500px) rotateX(1.2deg) translateY(2px) scale(.995)}
+  100%{opacity:1;transform:perspective(1500px) rotateX(0) translateY(0) scale(1);filter:none}}
+#jp.fx-opening{animation:fxBookOpen .8s cubic-bezier(.22,.9,.3,1) backwards}
+@keyframes fxBookClose{to{opacity:0;transform:perspective(1500px) rotateX(18deg) translateY(70px) scale(.85);filter:brightness(.6)}}
+#jp.fx-closing{animation:fxBookClose .24s ease-in both}
+@keyframes fxPopJ{0%{scale:0;rotate:-100deg}65%{scale:1.35;rotate:12deg}100%{scale:1;rotate:0deg}}
+#jp.fx-opening img.jx{animation:fxPopJ .55s cubic-bezier(.2,1.5,.4,1) backwards;animation-delay:calc(.4s + var(--k,0ms))}
+@keyframes fxPie{from{rotate:-220deg;scale:.15;opacity:0}to{rotate:0deg;scale:1;opacity:1}}
+@keyframes fxLabelPop{0%{scale:0}65%{scale:1.4}100%{scale:1}}
+#jpie.fx-pie .jpl{animation:fxLabelPop .5s cubic-bezier(.2,1.6,.4,1) .55s backwards}
+/* stat numbers on the right page pop when they change */
+@keyframes fxNumPop{0%{scale:1}30%{scale:2.1;color:#2c8a2c}65%{scale:.9}100%{scale:1}}
+#jp .jx.fx-num{animation:fxNumPop .65s cubic-bezier(.2,1.8,.4,1)}
+/* save button: breathes while there is something to save */
+@keyframes fxSaveIdle{0%,100%{scale:1;filter:brightness(1)}50%{scale:1.06;filter:brightness(1.18) drop-shadow(0 0 8px rgba(255,226,140,.9))}}
+#jp img.fx-saveidle{animation:fxSaveIdle 1.5s ease-in-out infinite}
+@keyframes fxSavingPulse{0%,100%{scale:1;filter:brightness(1)}50%{scale:.94;filter:brightness(1.4) drop-shadow(0 0 12px rgba(160,255,160,.95))}}
+#jp img.fx-saving{animation:fxSavingPulse .5s ease-in-out infinite}
+/* activity-log rows slide in one after another */
+@keyframes fxRow{from{translate:90px 0;opacity:0;scale:.92}to{translate:0 0;opacity:1;scale:1}}
+.jr.fx-a{animation:fxRow .42s cubic-bezier(.2,1.5,.4,1) backwards;animation-delay:calc(var(--n,0)*60ms - var(--el,0)*1ms)}
+.jr{transition:background .15s}
+.jr:hover{background:rgba(255,238,180,.35)}
+.jr>img:first-child{transition:scale .18s cubic-bezier(.2,1.9,.4,1),rotate .18s}
+.jr:hover>img:first-child{scale:1.22;rotate:-7deg}
+#jta{caret-color:#3f5a2e}
+
+/* ---------- day arrows + calendar ---------- */
+.jnav{transition:translate .12s cubic-bezier(.2,1.9,.4,1),scale .12s cubic-bezier(.2,1.9,.4,1),background .15s}
+.jnav:hover:not(:disabled){translate:0 -2px;scale:1.07}
+.jnav:active:not(:disabled){translate:0 1px;scale:.93}
+@keyframes fxPop{from{scale:.68;opacity:0;translate:0 50px}60%{opacity:1}to{scale:1;opacity:1;translate:0 0}}
+#jcal{animation:fxPop .45s cubic-bezier(.2,1.5,.4,1) backwards}
+@keyframes fxCell{from{scale:.3;opacity:0;rotate:-14deg}to{scale:1;opacity:1;rotate:0deg}}
+#jcal .cc.fx-a{animation:fxCell .4s cubic-bezier(.2,1.7,.4,1) backwards;animation-delay:calc(var(--n,0)*14ms - var(--el,0)*1ms)}
+#jcal .cc{transition:translate .12s cubic-bezier(.2,1.9,.4,1),scale .12s cubic-bezier(.2,1.9,.4,1),background .15s}
+#jcal .cc:not(.fut):not(.out):hover{translate:0 -3px;scale:1.07;z-index:2}
+@keyframes fxSelPop{0%{scale:1}40%{scale:1.16}100%{scale:1}}
+#jcal .cc.sel{animation:fxSelPop .38s cubic-bezier(.2,1.8,.4,1)}
+@keyframes fxRingPulse{0%{box-shadow:0 0 0 0 rgba(161,42,27,.65)}100%{box-shadow:0 0 0 10px rgba(161,42,27,0)}}
+#jcal .cc.today::after{content:'';position:absolute;inset:-2px;border-radius:7px;pointer-events:none;animation:fxRingPulse 1.8s ease-out infinite}
+@keyframes fxGrow{from{scale:0 1}to{scale:1 1}}
+#jcal .rb i,#jcs .cbar i{transform-origin:0 50%;animation:fxGrow .7s cubic-bezier(.2,.9,.3,1) .15s backwards}
+@keyframes fxSlide{from{translate:40px 0;opacity:0}to{translate:0 0;opacity:1}}
+#jcs>*{animation:fxSlide .38s cubic-bezier(.2,1.4,.4,1) backwards}
+#jcs>*:nth-child(2){animation-delay:.06s}#jcs>*:nth-child(3){animation-delay:.12s}#jcs>*:nth-child(4){animation-delay:.18s}
+#jcs .ct{animation:fxSlide .34s cubic-bezier(.2,1.4,.4,1) backwards;animation-delay:calc(.2s + var(--n,0)*45ms)}
+#jcs .cpt span{animation:fxPop .4s cubic-bezier(.2,1.6,.4,1) backwards}
+
+/* ---------- full-screen pictures (Reminders / Achievements) and the plain page ---------- */
 @keyframes fxFade{from{opacity:0}to{opacity:1}}
-@keyframes fxRow{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
-@keyframes fxToast{0%{opacity:0;transform:translate(-50%,-22px) scale(.92)}65%{opacity:1;transform:translate(-50%,3px) scale(1.02)}100%{transform:translate(-50%,0)}}
-@keyframes fxPie{from{opacity:.2;transform:rotate(-40deg) scale(.82)}to{opacity:1;transform:none}}
+@keyframes fxUnroll{0%{scale:.55 .15;opacity:0;rotate:-4deg;filter:brightness(2)}60%{scale:1.04 1.04;opacity:1;rotate:1deg}100%{scale:1 1;opacity:1;rotate:0deg;filter:none}}
+#imgpg{animation:fxFade .25s ease-out}
+#imgpg img{animation:fxUnroll .65s cubic-bezier(.2,1.3,.4,1) backwards}
+#tabpg{animation:fxFade .25s ease-out}
 
-#stage{animation:fxIntro .8s ease-out}
-#auth .ap{animation:fxPop .5s cubic-bezier(.2,1.3,.4,1)}
-#jp{animation:fxPage .32s ease-out}
-#jcal{animation:fxPop .32s cubic-bezier(.2,1.3,.4,1)}
-#toast{animation:fxToast .4s cubic-bezier(.2,1.3,.4,1)}
-#jsvg.fx-pie{animation:fxPie .6s cubic-bezier(.2,.9,.3,1)}
+/* ---------- toast: drops in, then shakes ---------- */
+@keyframes fxToast{from{translate:0 -70px;scale:.6;opacity:0}to{translate:0 0;scale:1;opacity:1}}
+@keyframes fxToastShake{0%,100%{rotate:0deg}20%{rotate:-2.2deg}40%{rotate:2deg}60%{rotate:-1.2deg}80%{rotate:.8deg}}
+#toast{animation:fxToast .45s cubic-bezier(.2,1.8,.4,1),fxToastShake .45s ease-in-out .4s}
 
-/* activity log rows drop in one after another */
-.jr{animation:fxRow .3s ease-out both}
-.jr:nth-child(2){animation-delay:.05s}.jr:nth-child(3){animation-delay:.1s}.jr:nth-child(4){animation-delay:.15s}
-.jr:nth-child(5){animation-delay:.2s}.jr:nth-child(6){animation-delay:.25s}.jr:nth-child(n+7){animation-delay:.3s}
-#jcs .ct{animation:fxRow .28s ease-out both}
-#jcs .ct:nth-child(2){animation-delay:.04s}#jcs .ct:nth-child(3){animation-delay:.08s}#jcs .ct:nth-child(4){animation-delay:.12s}#jcs .ct:nth-child(n+5){animation-delay:.16s}
+/* ---------- login / character / archetype screens ---------- */
+@keyframes fxDrop{0%{translate:0 -110px;opacity:0;scale:.82;rotate:-4deg}60%{opacity:1}100%{translate:0 0;opacity:1;scale:1;rotate:0deg}}
+#auth .ap{animation:fxDrop .7s cubic-bezier(.2,1.5,.4,1) backwards}
+@keyframes fxShakeX{0%,100%{translate:0 0}15%{translate:-14px 0}30%{translate:12px 0}45%{translate:-9px 0}60%{translate:6px 0}75%{translate:-3px 0}}
+#auth button{transition:translate .12s cubic-bezier(.2,1.9,.4,1),scale .12s cubic-bezier(.2,1.9,.4,1),background .15s}
+#auth button:not(:disabled):hover{translate:0 -2px;scale:1.04}
+#auth button:not(:disabled):active{translate:0 1px;scale:.95}
+#auth input{transition:background .15s,scale .15s,box-shadow .15s}
+#auth input:focus{scale:1.02;box-shadow:0 0 0 3px rgba(63,90,46,.45)}
+#asw{transition:scale .12s}#asw:hover{scale:1.06}
+#achars .ach,#aarchs .aac{transition:translate .16s cubic-bezier(.2,1.9,.4,1),scale .16s cubic-bezier(.2,1.9,.4,1),rotate .16s,background .15s}
+#achars .ach:not(.tk):hover{translate:0 -7px;scale:1.07;rotate:-1.5deg}
+#aarchs .aac:hover{translate:0 -4px;scale:1.02}
+#achars .ach:not(.tk):hover img{animation:fxWiggle .6s ease-in-out}
+@keyframes fxWiggle{0%,100%{rotate:0deg}25%{rotate:-5deg}50%{rotate:4deg}75%{rotate:-2deg}}
+@keyframes fxChoose{0%{scale:1}35%{scale:1.16;rotate:-3deg}70%{scale:.97}100%{scale:1;rotate:0deg}}
+#achars .ach.on,#aarchs .aac.on{animation:fxChoose .5s cubic-bezier(.2,1.8,.4,1)}
+@keyframes fxHalo{0%{box-shadow:0 0 0 0 rgba(63,90,46,.7)}100%{box-shadow:0 0 0 14px rgba(63,90,46,0)}}
+#achars .ach.on::before,#aarchs .aac.on::before{content:'';position:absolute;inset:-3px;border-radius:10px;pointer-events:none;animation:fxHalo 1.3s ease-out infinite}
+#aarchs .aac{position:relative}
+#achars .ach.tk:hover{animation:fxShakeX .35s}
+#fxa{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:-1}
 
-/* ---- buttons feel pressable ---- */
-.jnav,#auth button,#eb,#fxmute{transition:transform .1s,background .15s,filter .15s}
-.jnav:not(:disabled):hover,#auth button:not(:disabled):hover,#eb:hover{transform:translateY(-1px)}
-.jnav:not(:disabled):active,#auth button:not(:disabled):active,#eb:active,#fxmute:active{transform:translateY(2px) scale(.96)}
-.hb,.jh{transition:background .15s,transform .1s}
-.hb:active,.jh:active{transform:scale(.97)}
-#jcal .cc{transition:transform .12s,background .15s,box-shadow .15s}
-#jcal .cc:not(.fut):not(.out):hover{transform:translateY(-2px) scale(1.05);z-index:2}
-#jcal .cc.sel{animation:fxSelPop .25s ease-out}
-@keyframes fxSelPop{50%{transform:scale(1.08)}}
-#achars .ach,#aarchs .aac{transition:transform .15s,background .15s,box-shadow .15s}
-#achars .ach:not(.tk):hover,#aarchs .aac:hover{transform:translateY(-4px) rotate(-1deg)}
-#achars .ach.on{animation:fxSelPop .3s ease-out}
-#achars .ach.tk:hover{animation:fxShake .3s}
-@keyframes fxShake{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
-
-/* selected player card glows softly */
-.fx-sel{animation:fxGlow 2.2s ease-in-out infinite}
-@keyframes fxGlow{50%{box-shadow:0 0 15px rgba(255,255,255,.95)}}
-
-/* ---- stat numbers pop when they change ---- */
-.vl.fx-bump,#nm.fx-bump{animation:fxBump .5s ease-out}
-@keyframes fxBump{35%{transform:scale(1.35);color:#2f7a1e}100%{transform:none}}
-
-/* ---- effects layer (inside #stage, stage pixel coordinates) ---- */
-#fx,#fxamb{left:0;top:0;width:1472px;height:832px;pointer-events:none;overflow:hidden}
-#fx{z-index:60}
-#fxamb{z-index:1}
-
-/* fireflies drifting over the grove */
-.fx-ff{position:absolute;width:6px;height:6px;border-radius:50%;background:radial-gradient(circle,#fffbc2 0,#ffe66b 40%,rgba(255,230,107,0) 72%);
-  box-shadow:0 0 9px 3px rgba(255,236,120,.45);opacity:0;will-change:transform,opacity;
-  animation:fxFly var(--t,9s) ease-in-out var(--d,0s) infinite alternate}
-@keyframes fxFly{0%{opacity:0;transform:translate(0,0)}25%{opacity:.9}60%{opacity:.35}100%{opacity:.85;transform:translate(var(--x),var(--y))}}
-
-/* tile click ripple (flattened ring so it looks like it lies on the ground) */
-.fx-rip{position:absolute;width:84px;height:42px;margin:-21px 0 0 -42px;border:3px solid rgba(255,255,255,.9);border-radius:50%;
-  animation:fxRip .55s ease-out forwards}
-@keyframes fxRip{from{opacity:1;transform:scale(.25)}to{opacity:0;transform:scale(1.25)}}
-
-/* dust puffs when Mira steps */
-.fx-dust{position:absolute;width:12px;height:9px;margin:-4px 0 0 -6px;border-radius:50%;background:rgba(236,226,196,.85);
-  animation:fxDust .5s ease-out forwards}
-@keyframes fxDust{from{opacity:.9;transform:translate(0,0) scale(.5)}to{opacity:0;transform:translate(var(--dx),-14px) scale(1.7)}}
-
-/* floating "+3 INT" */
-.fx-float{position:absolute;font:24px 'Patrick Hand','Comic Sans MS',cursive;color:#fff8d6;white-space:nowrap;
-  -webkit-text-stroke:.6px #20180d;paint-order:stroke fill;text-shadow:0 2px 0 #20180d,0 0 10px rgba(255,220,90,.9);
-  animation:fxFloat 1.5s ease-out forwards}
-@keyframes fxFloat{0%{opacity:0;transform:translateY(8px) scale(.6)}15%{opacity:1;transform:translateY(-4px) scale(1.2)}100%{opacity:0;transform:translateY(-56px) scale(1)}}
-
-/* level-up banner and sparkles */
-.fx-lvl{position:absolute;left:0;width:1472px;top:330px;text-align:center;font:64px 'Patrick Hand','Comic Sans MS',cursive;color:#fff3b0;
-  -webkit-text-stroke:1.5px #20180d;paint-order:stroke fill;text-shadow:0 4px 0 #20180d,0 0 24px rgba(255,210,60,.95);
-  animation:fxLvl 2s cubic-bezier(.2,1.2,.3,1) forwards}
-@keyframes fxLvl{0%{opacity:0;transform:scale(.3) rotate(-6deg)}20%{opacity:1;transform:scale(1.15) rotate(2deg)}32%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:translateY(-30px)}}
-.fx-spark{position:absolute;width:14px;height:14px;margin:-7px 0 0 -7px;
-  background:#ffe36b;clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);
-  animation:fxSpark var(--s,1s) ease-out forwards}
-@keyframes fxSpark{0%{opacity:1;transform:translate(0,0) scale(.4) rotate(0)}100%{opacity:0;transform:translate(var(--dx),var(--dy)) scale(1.3) rotate(240deg)}}
-
-/* ---- mute button ---- */
-#fxmute{position:fixed;left:50%;margin-left:-21px;top:10px;z-index:250;width:42px;height:42px;padding:0;display:flex;align-items:center;justify-content:center;
-  border:1.5px solid #20180d;border-radius:8px;background:#eee0c6;cursor:pointer;
-  box-shadow:inset 0 0 0 1.5px #fdfae7,inset 0 0 0 2.5px #cdbd9c,1px 2px 0 rgba(0,0,0,.35)}
-#fxmute:hover{background:#e3d3aa}
-#fxmute svg{width:24px;height:24px;fill:none;stroke:#20180d;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
-#fxmute svg path.on{fill:#20180d}
-
-@media (prefers-reduced-motion:reduce){
-  #stage,#auth .ap,#jp,#jcal,#toast,.jr,#jcs .ct,.fx-sel,#jsvg.fx-pie{animation:none!important}
-  .fx-ff{display:none}
-}
+/* respect "reduce motion": keep sounds, drop the big movement */
+.fx-rm *,.fx-rm *::before,.fx-rm *::after{animation-duration:.01ms!important;animation-delay:0s!important;animation-iteration-count:1!important;transition-duration:.01ms!important}

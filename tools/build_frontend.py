@@ -67,14 +67,14 @@ s = lit1("else if(k==='e'){turn++;hist=[];TXA[2][0]='Turn  '+turn;RUNTX()}",
 s = lit1("((x<400&&y<290)||(x>1195&&y<145))", "((x<400&&y<290)||(x>1195&&y<560))", s)
 
 # 4. auth panel, styles, api client, glue
-s = lit1('</style></head>', (here / 'auth.css').read_text(encoding='utf-8') + '</style><link rel="stylesheet" href="fx.css"></head>', s)
+s = lit1('</style></head>', (here / 'auth.css').read_text(encoding='utf-8') + '</style></head>', s)
 tail = '</script></body></html>'
 if not s.rstrip().endswith(tail):
     sys.exit('Patch failed: unexpected end of file')
 i = s.rstrip().rfind(tail)
 s = (s[:i] + '</script>\n' + (here / 'auth.html').read_text(encoding='utf-8')
      + '<script src="api.js"></script>\n<script>\n' + (here / 'glue.js').read_text(encoding='utf-8')
-     + '</script>\n<script src="fx.js"></script></body></html>\n')
+     + '</script></body></html>\n')
 
 # 5. quote panel + fullscreen button (tools/frontend_patches.py)
 sys.path.insert(0, str(here))
@@ -82,6 +82,10 @@ import frontend_patches
 s = frontend_patches.apply(s)
 import frontend_cards
 s = frontend_cards.apply(s)
+
+# 6. game feel: animations (public/fx.css) + synthesized sounds and particles (public/fx.js), loaded last
+s = lit1('</style></head>', '</style>\n<link rel="stylesheet" href="fx.css"></head>', s)
+s = lit1('</script></body></html>', '</script>\n<script src="fx.js"></script></body></html>', s)
 
 out.write_text(s, encoding='utf-8')
 print(f'wrote {out} ({len(s)/1e6:.1f} MB)')

@@ -14,7 +14,7 @@ const catOf=x=>x.type==='signal'?'signal':(x.type==='necessity'?'necessity':'noi
 function mins(d){const s=String(d==null?'':d);let t=0,f=false;s.replace(/(\d+(?:\.\d+)?)\s*(hours?|hrs?|h|minutes?|mins?|m)(?![a-z])/gi,(m,n,u)=>{f=true;t+=/^h/i.test(u)?Number(n)*60:Number(n);return m});
  if(!f)return s;return fmtMin(t)}
 function rowHTML(x){const sg=x.type==='signal',bk=sg?'signa':'noise',[bw,bh]=P[bk],pts=Object.keys(SN).filter(k=>x.points&&x.points[k]>0).map(k=>'+'+x.points[k]+' '+SN[k]).join(', ');
-return`<div class="jr" title="${escA(pts||catOf(x))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn" title="${tip(x)}">${escA(x.name)}</span><img src="${IM[bk]}" alt="" style="left:${1036-785-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px"><span class="jt">${escA(mins(x.duration))}</span></div>`}
+return`<div class="jr" title="${escA(pts||catOf(x))}"><img src="${escA(x.emoji)}" alt="" style="left:5px;top:4.2px;width:34px;height:34px;object-fit:contain"><span class="jn" title="${tip(x)}">${escA(x.name)}</span><img src="${IM[bk]}" alt="" style="left:${234-bw/2}px;top:${(42.4-bh)/2}px;width:${bw}px;height:${bh}px">${x.time?`<span class="jtm">${escA(x.time)}</span><span class="jt jdu">${escA(mins(x.duration))}</span>`:`<span class="jt">${escA(mins(x.duration))}</span>`}</div>`}
 
 /* ---------- full task names ----------
    The server limits a task name to 30 characters. The name box (172px) is never cut with "...": the text is made

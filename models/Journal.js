@@ -25,6 +25,7 @@ const taskSchema = new mongoose.Schema(
     activity: { type: String, default: undefined },
     category: { type: String, enum: ['Signal', 'Noise', 'Unknown', 'Necessity'], default: undefined },
     duration: { type: String, default: 'unknown' },
+    start: { type: Number, min: 0, max: 1439, default: undefined }, // minutes after midnight when the block started; the end is start + duration (older days have none)
     points: { type: pointsSchema, default: () => ({}) },
   },
   { _id: false }

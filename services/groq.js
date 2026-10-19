@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 const Journal = require('../models/Journal');
-const { computeDay, displayDuration } = require('./dayStats');
+const { computeDay, displayDuration, parseClock, parseMinutes, DAY_MINUTES } = require('./dayStats');
 const { promptCatalogue, toModelText, classify, limitName, limitText, hasPrivateTerm, isGoodName } = require('./activities');
 const emojiCatalogue = require('./emojis');
 const archetypes = require('./archetypes');
@@ -193,12 +193,20 @@ function sanitizeTask(raw, archetype) {
     activity: c.activity, // 'unknown' for every Unknown activity, never the specific one
     category: c.category === 'Unknown' ? 'Noise' : c.category, // journal category: Signal | Noise (an Unknown task is Noise)
     duration: displayDuration(String(raw?.duration || 'unknown').trim().slice(0, 30)), // stored in minutes
+    start: parseClock(raw?.start), // clock time the block began (minutes after midnight), undefined when the model gave none
     points,
   };
 }
 
 function sanitize(parsed, archetype) {
   const tasks = (Array.isArray(parsed?.tasks) ? parsed.tasks : []).slice(0, 40).map((t) => sanitizeTask(t, archetype));
+  // A task without a start time follows the previous one (tasks are in day order and add up to 24h);
+  // the first one then starts at 12:00am. The end of a task is always start + duration.
+  let next = 0;
+  for (const t of tasks) {
+    if (!Number.isFinite(t.start)) t.start = next;
+    next = (t.start + parseMinutes(t.duration)) % DAY_MINUTES;
+  }
   // The ratio is computed from the task durations, not taken from the model.
   return { tasks, signal_to_noise_ratio: computeDay(tasks).ratio };
 }

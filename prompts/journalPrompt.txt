@@ -73,6 +73,8 @@ STEP 4. NO INVENTING.
 - Do not add up or verify the daily total. The server does that.
 - A single-time line that is not wake/sleep and has no range or duration ("ate lunch at 1pm") gets no task unless a duration can be read from the text.
 
+START TIME (the `start` field): the clock time the task begins, in 24-hour "HH:MM" ("09:00", "21:30"). For a time range it is the start of the range. A wake-up Sleep task starts at "00:00"; a bedtime Sleep task starts at the bedtime. If the journal gives only durations and no clock times ("2hr games, 3hr study"), lay the tasks one after another starting at "00:00" in the order written. Never output an end time: the server works it out from start + duration.
+
 DURATION FORMAT: always minutes as a number plus " mins". Examples: "45 mins", "105 mins", "300 mins". Never use "1hr" or "1 hr 30 min" forms.
 
 ====================================================================
@@ -121,6 +123,7 @@ Return exactly this structure:
       "name": "<2-5 word Title Case name following the NAMING rules, at most 30 characters including spaces>",
       "description": "<one short sentence following the DESCRIPTION rules, or empty string>",
       "type": "signal | noise | necessity",
+      "start": "<HH:MM, 24-hour clock time the task begins>",
       "duration": "<number> mins",
       "points": { "int": 0, "end": 0, "str": 0, "arc": 0, "wis": 0 }
     }
@@ -128,7 +131,7 @@ Return exactly this structure:
 }
 
 Rules:
-- All five point fields and the `description` field must be present on every task.
+- All five point fields, the `description` field and the `start` field must be present on every task.
 - A signal task may have points in one or several stats (section 2); their total is at most 8. Noise and necessity tasks have all zeros.
 - Output tasks in the order they appear in the day (a wake-up Sleep task first, a bedtime Sleep task last).
 - The response must be syntactically valid JSON.

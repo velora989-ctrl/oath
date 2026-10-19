@@ -76,5 +76,11 @@
 #aarchs .aac p.sg b{color:#3f5a2e;font-weight:400}#aarchs .aac p.nz b{color:#a12a1b;font-weight:400}
 /* activity log: the whole task name is shown (the font shrinks / wraps to two lines, see fitNames) */
 .jn{width:172px;height:41px;max-width:none;box-sizing:border-box;text-overflow:clip}
+/* activity log: "9:00am \u2013 11:00am" then the hours; the box is wider (it reaches past the scrollbar to the page edge) */
+#jlist{width:430px}
+.jn{left:48px}
+/* order in a row: name, signal/noise bars, length (30min / 2hr), then the clock range at the far right */
+.jt.jdu{left:250px;width:64px;font-size:17px;white-space:nowrap}
+.jtm{position:absolute;left:314px;width:116px;top:0;text-align:center;white-space:nowrap;font:19px/41px 'Patrick Hand','Comic Sans MS',cursive;color:#1a1a1a;-webkit-text-stroke:.3px #1a1a1a}
 #jcs .ct{height:auto;min-height:36px;padding:3px 0;box-sizing:border-box}
 #jcs .ct .cn1{overflow:visible;text-overflow:clip;white-space:normal;overflow-wrap:anywhere;line-height:1.05}

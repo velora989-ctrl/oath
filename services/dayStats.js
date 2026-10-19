@@ -53,6 +53,33 @@ const hasDuration = (duration) => {
 };
 const fmtMinutes = fmtMins;
 
+// ---- clock times for the activity log ("9:00am – 11:00am") ----
+// A task stores only its START as minutes after midnight (0-1439); the end is start + duration, so the two can never disagree.
+// "9:00am", "09:00", "21:30", "9pm", "9 p.m." -> minutes after midnight; anything else -> undefined
+function parseClock(v) {
+  if (typeof v === 'number' && Number.isFinite(v)) return v >= 0 && v < DAY_MINUTES ? Math.round(v) : undefined;
+  const m = /^\s*(\d{1,2})(?::(\d{2}))?\s*([ap])?\.?m?\.?\s*$/i.exec(String(v == null ? '' : v));
+  if (!m) return undefined;
+  let h = Number(m[1]);
+  const min = Number(m[2] || 0);
+  const ap = m[3] && m[3].toLowerCase();
+  if (min > 59) return undefined;
+  if (ap) {
+    if (h < 1 || h > 12) return undefined;
+    h = (h % 12) + (ap === 'p' ? 12 : 0);
+  } else if (h === 24 && min === 0) h = 0;
+  else if (h > 23) return undefined;
+  return h * 60 + min;
+}
+// 0 -> "12:00am", 540 -> "9:00am", 1290 -> "9:30pm"
+function fmtClock(m, suffix = true) {
+  m = ((Math.round(Number(m) || 0) % DAY_MINUTES) + DAY_MINUTES) % DAY_MINUTES;
+  const h = Math.floor(m / 60);
+  return `${h % 12 || 12}:${String(m % 60).padStart(2, '0')}${suffix ? (h < 12 ? 'am' : 'pm') : ''}`;
+}
+// "9:00 – 11:00", 12-hour digits without am/pm so the text can be bigger (the end wraps past midnight: "11:30 – 12:30"); '' when the task has no start time (old days)
+const fmtRange = (start, minutes) => (Number.isFinite(start) ? `${fmtClock(start, false)} \u2013 ${fmtClock(start + minutes, false)}` : '');
+
 // null when the day is fine, otherwise a message for the player.
 function checkDay(tasks) {
   const example = 'for example "8hr sleep, 2hr games, 3hr study"';
@@ -96,7 +123,7 @@ function presentTask(t, archetype) {
   // points already granted for other old tasks are never changed behind the player's back.
   const legacy = !t.activity;
   if (legacy && c.fixed && c.category !== 'Unknown' && c.activity !== 'sleep') c = classify({ type: t.type }, archetype);
-  const base = { emoji: t.emoji, name: limitName(t.name), description: t.description || '', duration: displayDuration(t.duration), points: t.points };
+  const base = { emoji: t.emoji, name: limitName(t.name), description: t.description || '', duration: displayDuration(t.duration), start: Number.isFinite(t.start) ? t.start : undefined, time: fmtRange(t.start, parseMinutes(t.duration)), points: t.points };
   if (c.fixed && c.category === 'Unknown') {
     return { ...base, emoji: c.image, name: c.name, description: '', type: 'noise', category: 'Noise', activity: c.activity, points: { int: 0, end: 0, str: 0, arc: 0, wis: 0 } };
   }
@@ -147,4 +174,4 @@ function isFutureDate(s, now = new Date()) {
 
 const todayUTC = (now = new Date()) => now.toISOString().slice(0, 10);
 
-module.exports = { presentTask, displayDuration, STATS, DATE_RE, MONTH_RE, DAY_MINUTES, parseMinutes, checkDay, computeDay, journalView, isRealDate, isFutureDate, todayUTC };
+module.exports = { parseClock, fmtClock, fmtRange, presentTask, displayDuration, STATS, DATE_RE, MONTH_RE, DAY_MINUTES, parseMinutes, checkDay, computeDay, journalView, isRealDate, isFutureDate, todayUTC };
