@@ -172,6 +172,12 @@
       bell() { bell(76, 0, .13, 1.1, .5); bell(83, .28, .12, 1.3, .5); },
       trophy() { [79, 84, 88, 91].forEach((m, i) => bell(m, i * .09, .09, 1.0, .5)); noise({ type: 'highpass', f: 5500, a: .05, d: .6, v: .045, t: .1 }); pl(67, 0, .1, .5); },
       enter() { whoosh(.1, .5); [60, 64, 67, 72].forEach((m, i) => pl(m, .05 + i * .08, .12, .4, 'triangle', .4)); bell(84, .4, .08, 1.2, .5); },
+      titleStart() {                                   /* the start screen: boom, rush of wind, rising chord, sparkles */
+        tone({ f: 70, to: 38, type: 'sine', d: .9, v: .34 }); noise({ type: 'lowpass', f: 220, d: .5, v: .2 });
+        whoosh(.15, .75); flip(.08, .3, .05);
+        [48, 55, 60, 64, 67, 72].forEach((m, i) => tone({ f: N(m), type: 'triangle', a: .06, d: 1.3, v: .07, t: .08 + i * .06, wet: .5 }));
+        for (let i = 0; i < 9; i++) bell(pick([84, 88, 91, 93, 96]), .3 + i * .09, .05, .8, .5);
+      },
       logout() { [72, 67, 64, 60].forEach((m, i) => pl(m, i * .09, .12, .3, 'triangle', .3)); }
     };
     const LOW = { hover: 1, type: 1, step: 1, ping: 1 };
@@ -726,6 +732,7 @@
     if (lo) window.GroveLogout = function () {
       if (going) return; going = true;
       SND.play('logout'); stage.classList.add('fx-out');
+      try { sessionStorage.setItem('grove.skipTitle', '1'); } catch (e) {}      /* the reload goes straight to the login menu */
       const args = arguments, self = this;
       setTimeout(() => lo.apply(self, args), 450);
     };
@@ -802,7 +809,13 @@
 
   /* the intro: panels fly in from their edges (after login, or straight away when you were already signed in) */
   let introDone = false;
-  function maybeIntro() { if (introDone) return; introDone = true; setTimeout(intro, 60); }
+  const titleOpen = () => !!(window.GroveTitle && !window.GroveTitle.done);   /* the start screen (title.js) is still on top */
+  function maybeIntro() { if (introDone || titleOpen()) return; introDone = true; setTimeout(intro, 60); }
+  /* the start screen was pressed: play the entrance now that the player can see it */
+  function titleDone() {
+    if (!authOn && face && face.style.visibility === 'visible') maybeIntro();
+    else if (authOn) $$('#auth .ap').forEach(e => { if (getComputedStyle(e).display !== 'none') { e.style.animation = 'none'; void e.offsetWidth; e.style.animation = ''; } });
+  }
   function intro() {
     SND.play('whoosh');
     if (RM) return;
@@ -851,6 +864,6 @@
   const sa = $('#fxsnda'); const syncSa = () => { sa.style.display = authOn ? 'flex' : 'none'; };
   syncSa(); if (auth) new MutationObserver(syncSa).observe(auth, { attributes: true, attributeFilter: ['style'] });
 
-  window.GroveFX = { sound: SND, burst: sparkBurst, confetti, levelUp: levelFX, quest: questFX };
+  window.GroveFX = { titleDone, sound: SND, burst: sparkBurst, confetti, levelUp: levelFX, quest: questFX };
   requestAnimationFrame(loop);
 })();

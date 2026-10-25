@@ -43,7 +43,7 @@ s = sub1(r"const CH=\[\{n:'Mira'.*?\}\}\],FACE=\[",
 s = lit1("else pg.style.display='flex'}", "else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", s)
 
 # 2b. Reminders / Achievements tabs show a static picture (public/ui/*.png) instead of the "Hi" page
-s = lit1("else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", "else if(k==='r'||k==='a')showImg(k);else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", s)
+s = lit1("else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", "else if(k==='r'&&window.openBoard)window.openBoard(window.GroveWho&&window.GroveWho());else if(k==='r'||k==='a')showImg(k);else{pg.textContent='Hi, '+CUR.n;pg.style.display='flex'}}", s)
 s = lit1("window.act=function(k){", 'const ip=document.createElement(\'div\');ip.id=\'imgpg\';ip.innerHTML=\'<img alt="">\';document.body.appendChild(ip);const closeImg=()=>{ip.style.display=\'none\'};ip.onclick=closeImg;addEventListener(\'keydown\',e=>{if(e.key===\'Escape\')closeImg()});const showImg=k=>{const m=ip.firstChild;m.src=k===\'r\'?\'ui/reminders.png\':\'ui/achievements.png\';m.alt=k===\'r\'?\'Reminders\':\'Achievements\';ip.style.display=\'flex\'};\n' + "window.act=function(k){", s)
 s = lit1('</style></head>', '#imgpg{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#0b0d12;z-index:100;cursor:pointer}#imgpg img{max-width:100vw;max-height:100vh;width:auto;height:auto;object-fit:contain;display:block;user-select:none;-webkit-user-drag:none}\n' + '</style></head>', s)
 
@@ -84,8 +84,12 @@ import frontend_cards
 s = frontend_cards.apply(s)
 
 # 6. game feel: animations (public/fx.css) + synthesized sounds and particles (public/fx.js), loaded last
-s = lit1('</style></head>', '</style>\n<link rel="stylesheet" href="fx.css"></head>', s)
-s = lit1('</script></body></html>', '</script>\n<script src="fx.js"></script></body></html>', s)
+s = lit1('</style></head>', '</style>\n<link rel="stylesheet" href="fx.css">\n<link rel="stylesheet" href="board.css"></head>', s)
+s = lit1('</script></body></html>', '</script>\n<script src="fx.js"></script>\n<script src="board.js"></script></body></html>', s)
+
+# 7. start screen ("Press Any Button"): public/title.css, title.js, title.jpg
+s = lit1('<head>', '<head>' + '<link rel="preload" as="image" href="title.jpg"><link rel="stylesheet" href="title.css">', s)
+s = lit1('<body>', '<body>' + '<div id="title" role="button" aria-label="Oath - press any button to start"><div class="tgo"><div class="tzoom"><div class="tpar"><img class="tbg" src="title.jpg" alt="Oath" decoding="async" fetchpriority="high"><div class="tglow"></div><div class="tshine"></div></div></div></div><canvas></canvas><div class="tvig"></div><div class="tbot"><div class="tprompt"><span class="tload">Loading<i class="td"></i><i class="td"></i><i class="td"></i></span><span class="tpress">Press Any Button</span></div><div class="tbar"><i></i></div></div><div class="tflash"></div><div class="tblack"></div></div>\n<script src="title.js"></script>', s)
 
 out.write_text(s, encoding='utf-8')
 print(f'wrote {out} ({len(s)/1e6:.1f} MB)')

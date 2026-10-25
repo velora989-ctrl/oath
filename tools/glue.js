@@ -45,7 +45,7 @@ window.pick=async function(i){
   await refreshOthers();apply();
   if(!CH[i]||!CH[i].id)return false;   /* nobody has this character yet: nothing happens */
   ci=i;apply();slotLook();return true};
-window.GroveMe=p=>{ME=p;PLAYERS=PLAYERS.map(x=>x.id===p.id?p:x);apply()};
+window.GroveMe=p=>{ME=p;PLAYERS=PLAYERS.map(x=>x.id===p.id?p:x);apply()};window.GroveWho=()=>{const c=CH[ci];return c&&c.id?{id:c.id,name:c.n,mine:!!ME&&c.id===ME.id}:null};
 window.GroveLogout=()=>{A.logout();location.reload()};
 
 /* journal page: load the viewed player's journal for the selected day (0 or 1 entry) */

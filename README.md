@@ -169,3 +169,20 @@ Each activity-log row shows `9:00 – 11:00` (12-hour digits, no am/pm) and, to 
 - A task with no start from the model follows the previous task (the first starts at 12:00am), which is right for journals written as `2hr games, 3hr study`.
 - The API sends `start` and `time` (the display string) on every task, including the calendar's task list. Days saved before this change have no start, so they keep showing just the duration (no database change needed).
 - Helpers: `parseClock`, `fmtClock`, `fmtRange` in `services/dayStats.js`. Row layout: `rowHTML` in `tools/journal_block.js`, columns in `tools/auth.css`.
+
+## Start screen (`public/title.css`, `title.js`, `title.jpg`)
+Opening the site first shows the Oath cover picture (`title.jpg`) with "Press Any Button". Markup is the `<div id="title">` at the top of `<body>` (also added by `tools/build_frontend.py`).
+- While it is shown, the page loads in the background for at least 2.6 s (up to 7.5 s on a slow connection): fonts, every stage image decoded, the character pictures, and your sign-in. A progress bar fills, then "Loading" turns into "Press Any Button". Pressing earlier is remembered and starts the moment loading finishes.
+- Any key, click, tap or gamepad button starts it: boom + chord sound (`titleStart` in `fx.js`), flash, the picture rushes toward you and dissolves into the menu, then the menu animates in (login panel drops in, or the game panels fly in if you were already signed in).
+- Animation: slow push-in, mouse parallax, glow and sunbeam over the logo, fireflies, pollen and leaves.
+- The game goes **full screen** on that first press (browsers only allow it from a key press, click or tap, so it cannot happen earlier). Esc leaves full screen; the Fullscreen button toggles it again. After a reload (e.g. logging out) the first click or key brings it back.
+- After "Log out" the page reloads straight to the login menu (no start screen); everywhere else it shows every time. To change the picture, replace `public/title.jpg` (16:9).
+
+## Notice board (Reminders tab)
+The **Reminders** tab (2nd tab under the stage) opens the notice board of the player whose card is selected (yours by default). `public/board.js` + `board.css`, art in `public/ui/`.
+- **Everybody can look, only the owner can change.** Other players see the board read-only (no handles, no typing, no Edit button); the server enforces it too (`PUT /api/board` always writes your own board).
+- **Edit board** (gold button, top right) unlocks it. Then you get the paper tray, a labelled toolbar and Canva-style selection: click an item, drag it to move, drag the 8 dots to resize (corners keep a picture's shape; Shift does the same for papers), drag the round arrow to turn it (snaps to straight / 45 degrees, Alt = free). Arrow keys nudge, Delete removes, Ctrl+D duplicates, Ctrl+Z / Ctrl+Shift+Z undo / redo, drop a paper on the tray to throw it away. "Done editing" (or Esc) locks it again.
+- **Writing**: Title / Heading / Subheading / Body / Fine print / Handwritten, 11 fonts, sizes 10-60, bold / italic / underline, colours, alignment, dividers.
+- **Pictures**: "Add image", drop a file on the board, or paste one. Any type the browser can open (PNG, JPG, GIF, WebP, SVG, AVIF...) works, transparent PNGs keep their transparency. The browser shrinks and re-encodes it, uploads it (`POST /api/board/images`, stored in MongoDB as `BoardImage`, max 5 MB, SVG is never stored) and pins it. **Vintage style** turns the picture into an aged parchment look (Parchment / Old photo / Ink sketch) and back to normal; Flip mirrors it.
+- **Saving**: `localStorage` at once, server a moment later (`GET /api/board` own, `GET /api/board/:playerId` anyone's, `PUT /api/board`, max 60 items; pictures nobody uses any more are deleted after a day).
+- **Wiring**: `server.js` mounts `/api/board` (2 MB body limit for that route); `api.js` has `getBoard(playerId?)`, `saveBoard`, `uploadBoardImage`; `index.html` loads `board.css` / `board.js`, and `act('r')` calls `openBoard(GroveWho())` (`window.GroveWho` is in `tools/glue.js`; the same patches are in `tools/build_frontend.py`).

@@ -14,6 +14,8 @@ for (const v of ['MONGODB_URI', 'JWT_SECRET', 'GROQ_API_KEY']) {
 
 const app = express();
 app.use(cors());
+// a board can hold up to 40 written papers, so its route gets a bigger body limit (must come before the global parser)
+app.use('/api/board', express.json({ limit: '2mb' }));
 app.use(express.json({ limit: '50kb' }));
 
 // slow down password guessing
@@ -25,6 +27,7 @@ app.use('/api/journals', require('./routes/journals'));
 app.use('/api/emojis', require('./routes/emojis'));
 app.use('/api/characters', require('./routes/characters'));
 app.use('/api/archetypes', require('./routes/archetypes'));
+app.use('/api/board', require('./routes/board'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
@@ -36,6 +39,7 @@ app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
+  if (err && err.type === 'entity.too.large') return res.status(413).json({ error: 'That is too big to save.' });
   console.error(err);
   res.status(500).json({ error: 'Something went wrong' });
 });

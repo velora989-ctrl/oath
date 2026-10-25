@@ -1,0 +1,50 @@
+/* Mira's Grove / Oath - start screen (title.css). Markup: <div id="title"> at the top of <body>; logic: title.js */
+html,body{background:#000}
+#title{position:fixed;inset:0;z-index:1000;background:#000;overflow:hidden;cursor:pointer;user-select:none;-webkit-user-select:none;touch-action:manipulation;color:#f7edd6}
+#title.off{display:none}
+#title .tgo{position:absolute;inset:0}
+#title .tzoom{position:absolute;inset:0;animation:tzIn 7.5s cubic-bezier(.12,.7,.2,1) both}
+/* the picture keeps its 16:9 shape and covers the screen; everything pinned to it (glow, light sweep) is in picture coordinates */
+#title .tpar{--w:max(100vw,calc(100vh*1.7768));--h:max(100vh,calc(100vw/1.7768));position:absolute;width:var(--w);height:var(--h);left:calc(50% - var(--w)/2);top:calc(50% - var(--h)/2);animation:tzBreath 18s ease-in-out 2s infinite alternate}
+#title .tbg{position:absolute;inset:0;width:100%;height:100%;display:block;opacity:0;transition:opacity 1.2s ease-out;pointer-events:none;-webkit-user-drag:none}
+#title.in .tbg{opacity:1}
+@keyframes tzIn{0%{scale:1.17;filter:brightness(.55) saturate(.7)}35%{filter:brightness(1) saturate(1)}100%{scale:1;filter:none}}
+@keyframes tzBreath{from{scale:1}to{scale:1.03}}
+/* soft glow breathing behind the logo + a slow sunbeam that sweeps across the picture */
+#title .tglow{position:absolute;left:22%;top:24%;width:58%;height:52%;mix-blend-mode:screen;pointer-events:none;background:radial-gradient(ellipse at 50% 52%,rgba(255,238,190,.34),rgba(255,238,190,0) 68%);opacity:0;animation:tGlow 5s ease-in-out 1.6s infinite}
+@keyframes tGlow{0%,100%{opacity:.25;scale:.97}50%{opacity:1;scale:1.04}}
+#title .tshine{position:absolute;inset:0;mix-blend-mode:screen;pointer-events:none;opacity:.55;background:linear-gradient(105deg,transparent 0 41%,rgba(255,236,190,.0) 43%,rgba(255,240,205,.5) 50%,rgba(255,236,190,0) 57%,transparent 59%);background-size:260% 100%;background-position:160% 0;animation:tShine 7s ease-in-out 2.2s infinite}
+@keyframes tShine{0%{background-position:160% 0}55%,100%{background-position:-60% 0}}
+#title canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none}
+#title .tvig{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 46%,transparent 52%,rgba(4,8,4,.55) 100%),linear-gradient(transparent 62%,rgba(6,12,6,.62))}
+/* bottom: Loading... then "Press Any Button" */
+#title .tbot{position:absolute;left:0;right:0;bottom:7.5vh;display:flex;flex-direction:column;align-items:center;gap:16px;opacity:0;animation:tUp 1.1s ease-out 1.4s forwards;pointer-events:none}
+@keyframes tUp{from{opacity:0;translate:0 18px}to{opacity:1;translate:0 0}}
+#title .tprompt{position:relative;height:1.2em;min-width:12em;text-align:center;font:600 clamp(22px,2.7vw,40px)/1.2 'Patrick Hand','Lexend','Comic Sans MS',cursive;letter-spacing:.13em;color:#f7edd6;text-shadow:0 2px 0 #2b1d0c,0 0 20px rgba(0,0,0,.75),0 0 3px rgba(0,0,0,.8)}
+#title .tprompt>span{position:absolute;left:0;right:0;top:0;white-space:nowrap;transition:opacity .35s,translate .35s}
+#title .tpress{opacity:0;translate:0 10px}
+#title .tload{opacity:.92}
+#title .td{display:inline-block;width:.3em;height:.3em;margin-left:.22em;border-radius:50%;background:currentColor;vertical-align:.1em;animation:tDot 1.2s ease-in-out infinite}
+#title .td:nth-of-type(2){animation-delay:.15s}#title .td:nth-of-type(3){animation-delay:.3s}
+@keyframes tDot{0%,80%,100%{opacity:.2;scale:.7}40%{opacity:1;scale:1.1}}
+#title .tbar{width:min(340px,52vw);height:5px;border-radius:4px;background:rgba(247,237,214,.22);overflow:hidden;box-shadow:0 0 0 1px rgba(40,26,10,.5);transition:opacity .4s,translate .4s}
+#title .tbar i{display:block;height:100%;width:100%;transform-origin:0 50%;scale:var(--p,0) 1;background:linear-gradient(90deg,#c9a24a,#ffe9a0);box-shadow:0 0 10px rgba(255,226,140,.9)}
+#title.ready .tload{opacity:0;translate:0 -10px}
+#title.ready .tbar{opacity:0;translate:0 8px}
+#title.ready .tpress{opacity:1;translate:0 0;animation:tPop .6s cubic-bezier(.2,1.8,.4,1),tPulse 2.2s ease-in-out .6s infinite}
+@keyframes tPop{0%{scale:.6;filter:brightness(2.2)}100%{scale:1;filter:none}}
+@keyframes tPulse{0%,100%{opacity:.6;scale:1}50%{opacity:1;scale:1.045}}
+#title.queued .tpress{animation:none;opacity:1}
+/* start: the world rushes toward you, a flash, and the screen dissolves into the menu */
+#title .tflash{position:absolute;inset:0;pointer-events:none;opacity:0;background:radial-gradient(circle at 50% 48%,#fff,rgba(255,240,200,.65) 38%,rgba(255,240,200,0) 75%)}
+#title .tblack{position:absolute;inset:0;background:#000;pointer-events:none;animation:tBlack 1.8s ease-out .15s forwards}
+@keyframes tBlack{to{opacity:0}}
+#title.go{pointer-events:none;animation:tFade .95s ease-in .42s forwards}
+#title.go .tgo{animation:tGo 1.2s cubic-bezier(.55,0,.2,1) forwards}
+#title.go .tbot{animation:tBotOut .45s ease-in forwards}
+#title.go .tflash{animation:tFlash 1s ease-out .05s}
+@keyframes tGo{to{scale:1.42;filter:blur(7px) brightness(1.55)}}
+@keyframes tFade{to{opacity:0}}
+@keyframes tBotOut{to{opacity:0;translate:0 24px;scale:1.1}}
+@keyframes tFlash{0%{opacity:0}18%{opacity:.85}100%{opacity:0}}
+@media (prefers-reduced-motion:reduce){#title .tzoom,#title .tpar,#title .tglow,#title .tshine{animation:none}#title .tglow{opacity:.6}}

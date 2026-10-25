@@ -62,5 +62,22 @@
    
     submitJournal: (text, date) => request('POST', '/api/journals', { text, date }),
     deleteJournal: (id) => request('DELETE', `/api/journals/${id}`),
+
+    // the notice board (Reminders tab): papers and pictures pinned on a board. getBoard -> { papers, updatedAt }, saveBoard(papers) -> { updatedAt }
+    // getBoard() = your own; getBoard(playerId) = anyone's (read only). Only the owner can saveBoard.
+    getBoard: (playerId) => request('GET', playerId ? `/api/board/${playerId}` : '/api/board').then((d) => d.board),
+    saveBoard: (papers) => request('PUT', '/api/board', { papers }),
+    // pin a picture: upload the (already shrunk) image, get its id back
+    async uploadBoardImage(blob) {
+      const res = await fetch(API_BASE + '/api/board/images', {
+        method: 'POST',
+        headers: { 'Content-Type': blob.type || 'application/octet-stream', Authorization: `Bearer ${getToken()}` },
+        body: blob,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      return data;
+    },
+    boardImageUrl: (id) => `${API_BASE}/api/board/images/${id}`,
   };
 })();
