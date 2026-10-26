@@ -47,6 +47,7 @@ app.use((err, req, res, next) => {
 const port = process.env.PORT || 3000;
 connectDB()
   .then(() => require('./models/Player').updateMany({ character: 'pip' }, { $set: { character: 'crimson' } }))   // Pip became The Crimson Lord
+  .then(() => require('./models/Board').collection.dropIndex('player_1').catch(() => {}))   // boards used to be one per player (unique); now a player can have several
   .then(() => app.listen(port, () => console.log(`Mira's Grove running on http://localhost:${port}`)))
   .catch((err) => {
     console.error('Startup failed:', err.message);

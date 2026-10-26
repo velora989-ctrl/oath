@@ -3,7 +3,7 @@
    appear and every paper / picture can be dragged, resized from 8 handles, rotated, restyled, duplicated or removed.
    Pictures (any type, transparent PNGs too) are shrunk in the browser, uploaded (/api/board/images) and can be switched to a
    "vintage" parchment look with one button. Saved per player: localStorage at once, and to the server a moment later.
-   Opened with window.openBoard({ id, name, mine }); closed with Back or Esc. */
+   A player keeps several named boards (tabs above the wood). Opened with window.openBoard({ id, name, mine }); closed with Back or Esc. */
 (function () {
   'use strict';
   if (window.openBoard) return;
@@ -11,7 +11,7 @@
   const W = 1671, H = 941;
   const BOARD = { x: 238, y: 232, w: 1022, h: 522 };   /* the wood the papers sit on (stage px) */
   const TRAY = { x: 1346, y: 122, w: 296, h: 656 };
-  const MAX_ITEMS = 60, MAX_W = 1000, MAX_H = 1000, MAX_IMG_SIDE = 1600, MAX_IMG_BYTES = 4.5 * 1024 * 1024;
+  const MAX_BOARDS = 12, MAX_ITEMS = 60, MAX_W = 1000, MAX_H = 1000, MAX_IMG_SIDE = 1600, MAX_IMG_BYTES = 4.5 * 1024 * 1024;
   const FONT_LINK = 'https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=EB+Garamond:ital,wght@0,400;0,600;1,400&family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Uncial+Antiqua&family=MedievalSharp&family=Pirata+One&family=Almendra:ital,wght@0,400;0,700;1,400&family=Caveat:wght@500;700&family=Kalam&family=Special+Elite&display=swap';
 
   const FONTS = [
@@ -94,6 +94,7 @@
       const n = document.createElement(t);
       const cls = (c.getAttribute('class') || '').split(/\s+/).filter(x => CLASSES.has(x)); if (cls.length) n.className = cls.join(' ');
       const o = c.getAttribute('data-o'); if (/^[1-4]$/.test(o || '')) n.setAttribute('data-o', o);
+      const dl = c.getAttribute('data-l'); if (/^(bul|num)$/.test(dl || '')) n.setAttribute('data-l', dl);
       const st = cleanStyle(c.getAttribute('style')); if (st) n.setAttribute('style', st);
       cleanInto(c, n); dst.appendChild(n);
     }
@@ -113,9 +114,10 @@
   const isBlank = html => { const d = document.createElement('div'); d.innerHTML = html; return !d.textContent.trim() && !d.querySelector('.b-orn'); };
 
   /* ---------------------------------------------------------------- state */
-  let root, stage, boardEl, ghost, trayEl, barEl, hintEl, statusEl, selEl, fileEl, editBtn, menuEl = null;
+  let root, stage, boardEl, ghost, trayEl, barEl, hintEl, statusEl, selEl, fileEl, editBtn, tabsEl, actEl, cropEl, menuEl = null;
   let scale = 1, isOpen = false, built = false;
   let owner = { id: null, name: '', mine: false }, editing = false;
+  let boards = [], boardId = null, cropId = null;   /* the player's boards (tabs), the one on the wood, the picture being cropped */
   let items = [];             /* {id,style,x,y,w,h,rot,z,seed,html, img,fx,flip,alpha, el} */
   let selId = null, zTop = 10, touched = false, loadSeq = 0;
   let undoStack = [], redoStack = [], lastSnap = '[]', textT = 0, nudgeT = 0;
@@ -126,7 +128,8 @@
   const edOf = p => (p && p.el ? p.el.querySelector('.txt') : null);
 
   function token() { try { return localStorage.getItem('grove_token') || ''; } catch (e) { return ''; } }
-  const userKey = () => 'grove_board_' + (owner.id || 'guest');
+  const userKey = () => 'grove_board_' + (boardId || owner.id || 'guest');
+  const boardName = () => { const b = boards.find(x => x.id === boardId); return b ? b.name : 'My board'; };
   const api = () => window.GroveAPI;
   const imgUrl = p => p.src || (api() && api().boardImageUrl ? api().boardImageUrl(p.img) : '/api/board/images/' + p.img);
 
@@ -166,10 +169,45 @@
     p.el = e; setImgSrc(p); layout(p);
     return e;
   }
-  function setImgSrc(p) {
-    const u = imgUrl(p), im = $('.im', p.el);
-    $('img', im).src = u; im.style.setProperty('--src', 'url("' + u + '")');
+  /* A picture is shown as: the original, or a cropped copy of it, or a "baked" vintage copy (vintage.js draws real wear into the
+     pixels for the photo and ink looks; the parchment look stays a CSS effect). The original is never changed. */
+  const srcCache = new Map(), bakeCache = new Map();
+  function loadSrc(url) {
+    if (!srcCache.has(url)) srcCache.set(url, new Promise((res, rej) => { const im = new Image(); if (!/^(blob|data):/.test(url)) im.crossOrigin = 'anonymous'; im.onload = () => res(im); im.onerror = () => { srcCache.delete(url); rej(new Error('img')); }; im.src = url; }));
+    return srcCache.get(url);
   }
+  const hasCrop = p => !!p.cr && p.cr.some(v => v > 0.001);
+  const canvasUrl = cv => new Promise(res => { try { cv.toBlob(b => res(b ? URL.createObjectURL(b) : null), 'image/png'); } catch (e) { res(null); } });
+  function cropCanvas(im, cr, maxSide) {
+    const nw = im.naturalWidth, nh = im.naturalHeight, sx = cr[0] * nw, sy = cr[1] * nh, sw = Math.max(1, (1 - cr[0] - cr[2]) * nw), sh = Math.max(1, (1 - cr[1] - cr[3]) * nh);
+    const k = Math.min(1, maxSide / Math.max(sw, sh)), c = document.createElement('canvas'); c.width = Math.max(1, Math.round(sw * k)); c.height = Math.max(1, Math.round(sh * k));
+    c.getContext('2d').drawImage(im, sx, sy, sw, sh, 0, 0, c.width, c.height); return c;
+  }
+  function setImgEls(p, url) {
+    const im = p.el && $('.im', p.el); if (!im) return;
+    $('img', im).src = url; im.style.setProperty('--src', 'url("' + url + '")');
+  }
+  const bakeSize = p => Math.round(clamp(Math.max(p.w, p.h) * 1.5, 480, 1400));
+  async function renderImg(p) {
+    if (!p.el) return;
+    const tk = (p._rt = (p._rt || 0) + 1), base = imgUrl(p), cr = hasCrop(p) ? p.cr : null, fx = p.fx, baking = (fx === 2 || fx === 3) && !!window.GroveVintage;
+    if (!baking && !cr) { p.el.classList.remove('baked'); setImgEls(p, base); return; }
+    let im; try { im = await loadSrc(base); } catch (e) { return; }
+    if (tk !== p._rt || !p.el) return;
+    try {
+      const long = bakeSize(p), key = [p.img || base, cr ? cr.join(',') : '', baking ? fx + ':' + p.seed + ':' + long + ':' + (p.alpha ? 1 : 0) : 'c'].join('|');
+      let url = bakeCache.get(key);
+      if (!url) {
+        let cv = cropCanvas(im, cr || [0, 0, 0, 0], baking ? long : 1600);
+        if (baking) cv = window.GroveVintage.bake(cv, fx, p.seed, p.alpha, cv.width / Math.max(1, p.w));
+        url = await canvasUrl(cv); if (!url) throw new Error('canvas');
+        bakeCache.set(key, url);
+      }
+      if (tk !== p._rt || !p.el) return;
+      p.bk = long; p.el.classList.toggle('baked', baking); setImgEls(p, url);
+    } catch (e) { p.el.classList.remove('baked'); setImgEls(p, base); }
+  }
+  function setImgSrc(p) { setImgEls(p, imgUrl(p)); renderImg(p); }
   function layout(p) {
     const e = p.el; if (!e) return;
     e.style.left = p.x + 'px'; e.style.top = p.y + 'px'; e.style.width = p.w + 'px'; e.style.height = p.h + 'px';
@@ -207,7 +245,7 @@
     const e = p.el;
     if (!isImg(p)) {
       const ed = edOf(p);
-      ed.addEventListener('input', ev => { if (!editing) return; touched = true; enterFix(ed, ev); refreshEmpty(p); grow(p); changed(); scheduleTextCommit(); });
+      ed.addEventListener('input', ev => { if (!editing) return; touched = true; enterFix(ed, ev); if (ev.inputType === 'insertText' && ev.data === ' ') autoList(ed); refreshEmpty(p); grow(p); changed(); scheduleTextCommit(); });
       ed.addEventListener('paste', ev => {
         ev.preventDefault(); if (!editing) return;
         const cd = ev.clipboardData || window.clipboardData, files = cd && cd.files && Array.from(cd.files).filter(f => /^image\//.test(f.type));
@@ -220,6 +258,7 @@
       ed.addEventListener('keydown', ev => { ev.stopPropagation(); if (ev.key === 'Escape') ed.blur(); });
     }
     e.addEventListener('pointerdown', ev => itemDown(ev, p));
+    e.addEventListener('dblclick', ev => { if (!editing || cropId) return; if (isImg(p)) enterCrop(p); else if (ev.target.closest('.txt')) focusAt(p, ev.clientX, ev.clientY); });
   }
   /* after Enter at the end of a title / heading / subheading, the next line is plain body text */
   function enterFix(ed, ev) {
@@ -230,6 +269,19 @@
     const prev = b.previousElementSibling;
     if (prev && !b.textContent && ENTER_NEXT[b.className] && prev.className === b.className) { b.className = ENTER_NEXT[b.className]; b.removeAttribute('style'); b.removeAttribute('data-ph'); }
     if (b.classList.contains('b-orn')) b.className = 'b-body';
+    /* Enter on an empty bullet / number ends the list */
+    if (b.getAttribute('data-l') && prev && prev.getAttribute('data-l') === b.getAttribute('data-l') && !prev.textContent.trim()) { prev.remove(); b.removeAttribute('data-l'); }
+  }
+  /* typing "- " or "1. " at the start of a line starts a bullet / numbered list */
+  function autoList(ed) {
+    const s = getSelection(); if (!s.rangeCount) return;
+    let b = s.anchorNode; while (b && b.parentNode !== ed) b = b.parentNode;
+    if (!b || b.nodeType !== 1 || b.getAttribute('data-l') || b.classList.contains('b-orn')) return;
+    const t = b.textContent.replace(/\u00a0/g, ' '); let k = null;
+    if (/^[-*\u2022]\s$/.test(t)) k = 'bul'; else if (/^\d{1,2}[.)]\s$/.test(t)) k = 'num';
+    if (!k) return;
+    b.innerHTML = '<br>'; b.setAttribute('data-l', k);
+    const r = document.createRange(); r.setStart(b, 0); r.collapse(true); s.removeAllRanges(); s.addRange(r);
   }
   /* a paper grows when the text no longer fits */
   function grow(p) {
@@ -254,7 +306,7 @@
   function front(p) { if (p.z < zTop || items.some(q => q !== p && q.z === p.z)) { p.z = ++zTop; p.el.style.zIndex = p.z; changed(); } }
   function layoutSel(p) {
     if (!selEl) return;
-    if (!p || !editing || !p.el) { selEl.classList.remove('on'); return; }
+    if (!p || !editing || !p.el || cropId) { selEl.classList.remove('on'); if (actEl) actEl.classList.remove('on'); return; }
     placeSel(BOARD.x + p.x, BOARD.y + p.y, p);
   }
   function placeSel(x, y, p) {   /* x, y = the top-left corner of the item in stage px */
@@ -265,7 +317,19 @@
       const a = (((HANDLE_ANGLE[h.dataset.h] + p.rot) % 180) + 180) % 180, k = Math.round(a / 45) % 4;
       h.style.cursor = ['ns-resize', 'nesw-resize', 'ew-resize', 'nwse-resize'][k];
     });
+    placeAct(x, y, p);
   }
+  /* the little bar next to the selected item (Canva style): the things you do most, with words on the buttons */
+  const actBusy = on => { if (actEl) actEl.classList.toggle('busy', !!on); };
+  function placeAct(x, y, p) {
+    actEl.classList.add('on'); actEl.dataset.k = isImg(p) ? 'img' : 'paper';
+    const th = p.rot * Math.PI / 180, co = Math.cos(th), si = Math.sin(th), cx = x + p.w / 2, cy = y + p.h / 2;
+    let minY = 1e9, maxY = -1e9; [[-1, -1], [1, -1], [1, 1], [-1, 1]].forEach(([a, b]) => { const yy = cy + a * p.w / 2 * si + b * p.h / 2 * co; if (yy < minY) minY = yy; if (yy > maxY) maxY = yy; });
+    const aw = actEl.offsetWidth || 330, ah = actEl.offsetHeight || 44;
+    let top = maxY + 24; if (top + ah > 814) top = minY - 86 - ah; if (top < 4) top = clamp(maxY + 24, 4, 770);
+    actEl.style.left = clamp(cx - aw / 2, 6, W - aw - 6) + 'px'; actEl.style.top = Math.round(top) + 'px';
+  }
+
   function badge(txt) { const z = $('.hz', selEl); z.textContent = txt; z.classList.add('on'); }
   function hideBadge() { $('.hz', selEl).classList.remove('on'); }
 
@@ -278,12 +342,13 @@
     window.addEventListener('pointermove', mv, true); window.addEventListener('pointerup', fin, true); window.addEventListener('pointercancel', fin, true);
   }
   function itemDown(ev, p) {
-    if (!editing) return;
+    if (!editing || cropId) return;
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;
-    const inText = !isImg(p) && !!ev.target.closest('.txt');
+    const inText = !isImg(p) && !!ev.target.closest('.txt'), wasSel = selId === p.id;
     if (inText && document.activeElement === edOf(p)) { select(p.id); return; }   /* already writing: normal caret and text selection */
+    const a = document.activeElement; if (a && a.closest && a.closest('.txt') && a !== edOf(p)) a.blur();
     select(p.id); ev.preventDefault();
-    startMove(ev, p, inText);   /* a click without dragging puts the cursor in the text */
+    startMove(ev, p, inText && wasSel);   /* 1st click selects (Delete removes the paper); a click on the selected paper puts the cursor in the text */
   }
   function focusAt(p, x, y) {
     const ed = edOf(p); if (!ed) return;
@@ -302,7 +367,7 @@
     const e = p.el, pt0 = toStage(ev);
     const sx = BOARD.x + p.x, sy = BOARD.y + p.y, dx = pt0.x - sx, dy = pt0.y - sy;
     let moved = false, ax = sx, ay = sy;
-    const lift = () => { if (moved) return; moved = true; ghost.appendChild(e); e.style.left = sx + 'px'; e.style.top = sy + 'px'; e.classList.add('lift'); const a = document.activeElement; if (a && a.blur) a.blur(); snd('flip'); };
+    const lift = () => { if (moved) return; moved = true; actBusy(true); ghost.appendChild(e); e.style.left = sx + 'px'; e.style.top = sy + 'px'; e.classList.add('lift'); const a = document.activeElement; if (a && a.blur) a.blur(); snd('flip'); };
     track(m => {
       const pt = toStage(m);
       if (!moved && Math.hypot(pt.x - pt0.x, pt.y - pt0.y) < 4) return;
@@ -310,7 +375,7 @@
       placeSel(ax, ay, p);
       trayEl.classList.toggle('drop', inRect(pt, TRAY));
     }, u => {
-      trayEl.classList.remove('drop');
+      trayEl.classList.remove('drop'); actBusy(false);
       if (!moved) { if (clickEdit && editing) focusAt(p, u.clientX, u.clientY); return; }
       const pt = toStage(u);
       e.classList.remove('lift');
@@ -325,14 +390,14 @@
     ev.preventDefault(); const e = p.el;
     const c = { x: BOARD.x + p.x + p.w / 2, y: BOARD.y + p.y + p.h / 2 }, pt0 = toStage(ev);
     const a0 = Math.atan2(pt0.y - c.y, pt0.x - c.x), r0 = p.rot;
-    e.classList.add('rotating');
+    e.classList.add('rotating'); actBusy(true);
     track(m => {
       const pt = toStage(m), a = Math.atan2(pt.y - c.y, pt.x - c.x);
       let r = r0 + (a - a0) * 180 / Math.PI;
       r = ((r + 540) % 360) - 180;
       if (!m.altKey) { const q = Math.round(r / 45) * 45; if (Math.abs(r - q) < 3.5) r = q; else r = Math.round(r * 2) / 2; }
       p.rot = clamp(r, -180, 180); layout(p); badge(Math.round(p.rot) + '°');
-    }, () => { e.classList.remove('rotating'); hideBadge(); commit(); changed(); });
+    }, () => { e.classList.remove('rotating'); actBusy(false); hideBadge(); commit(); changed(); });
   }
   /* ---- resize from any of the 8 handles, measured along the item's own axes; the opposite side stays where it is.
         Corners keep a picture's shape (and a paper's, while Shift is held). */
@@ -343,7 +408,7 @@
     const toW = (x, y) => ({ x: x * co - y * si, y: x * si + y * co }), toL = (x, y) => ({ x: x * co + y * si, y: -x * si + y * co });
     const a = toW(-sx * w0 / 2, -sy * h0 / 2), anchor = { x: c0.x + a.x, y: c0.y + a.y };
     const img = isImg(p), minW = img ? 24 : 110, minH = img ? 24 : 80, maxW = img ? 2000 : MAX_W, maxH = img ? 2000 : MAX_H;
-    e.classList.add('resizing');
+    e.classList.add('resizing'); actBusy(true);
     track(m => {
       const pt = toStage(m), v = toL(pt.x - anchor.x, pt.y - anchor.y);
       let w = sx ? sx * v.x : w0, h = sy ? sy * v.y : h0;
@@ -354,7 +419,7 @@
       const o = toW(sx * w / 2, sy * h / 2), c = { x: anchor.x + o.x, y: anchor.y + o.y };
       p.w = Math.round(w); p.h = Math.round(h); p.x = Math.round(c.x - BOARD.x - p.w / 2); p.y = Math.round(c.y - BOARD.y - p.h / 2);
       layout(p); badge(p.w + ' × ' + p.h);
-    }, () => { e.classList.remove('resizing'); hideBadge(); grow(p); commit(); changed(); });
+    }, () => { e.classList.remove('resizing'); actBusy(false); hideBadge(); grow(p); commit(); changed(); if (isImg(p) && (p.fx === 2 || p.fx === 3) && (!p.bk || Math.abs(bakeSize(p) - p.bk) / p.bk > 0.3)) renderImg(p); });
   }
 
   /* ---------------------------------------------------------------- adding / removing / duplicating */
@@ -401,7 +466,7 @@
     const o = { id: String(d.id || uid()).slice(0, 40), style: img ? 'image' : (STYLES[d.style] ? d.style : 'parch'), x: +d.x || 0, y: +d.y || 0,
       w: img ? clamp(+d.w || 300, 20, 2000) : clamp(+d.w || 300, 100, MAX_W), h: img ? clamp(+d.h || 300, 20, 2000) : clamp(+d.h || 300, 80, MAX_H),
       rot: clamp(+d.rot || 0, -180, 180), z: +d.z || 1, seed: (+d.seed || 1) | 0, html: String(d.html || '') };
-    if (img) { o.img = /^[a-f0-9]{24}$/.test(String(d.img || '')) ? String(d.img) : ''; o.fx = clamp(Math.round(+d.fx || 0), 0, 3); o.flip = d.flip ? 1 : 0; o.alpha = d.alpha ? 1 : 0; }
+    if (img) { o.img = /^[a-f0-9]{24}$/.test(String(d.img || '')) ? String(d.img) : ''; o.fx = clamp(Math.round(+d.fx || 0), 0, 3); o.flip = d.flip ? 1 : 0; o.alpha = d.alpha ? 1 : 0; o.cr = Array.isArray(d.cr) && d.cr.length === 4 ? d.cr.map(v => clamp(+v || 0, 0, 0.95)) : null; }
     return o;
   }
   function updateHint() { hintEl.classList.toggle('off', items.length > 0); }
@@ -460,7 +525,7 @@
     const k = Math.min(1, 420 / pr.w, 330 / pr.h), w = Math.max(30, Math.round(pr.w * k)), h = Math.max(30, Math.round(pr.h * k));
     const mx = (cx == null ? BOARD.x + BOARD.w / 2 : cx) + n * 28, my = (cy == null ? BOARD.y + BOARD.h / 2 : cy) + n * 28;
     const p = { id: uid(), style: 'image', x: Math.round(clamp(mx - w / 2, BOARD.x + 30 - w, BOARD.x + BOARD.w - 30) - BOARD.x), y: Math.round(clamp(my - h / 2, BOARD.y + 30 - h, BOARD.y + BOARD.h - 30) - BOARD.y),
-      w, h, rot: 0, z: ++zTop, seed: (Math.random() * 1e9) | 0, html: '', img: '', fx: 0, flip: 0, alpha: pr.alpha ? 1 : 0, src: URL.createObjectURL(pr.blob) };
+      w, h, rot: 0, z: ++zTop, seed: (Math.random() * 1e9) | 0, html: '', img: '', fx: 0, flip: 0, alpha: pr.alpha ? 1 : 0, cr: null, src: URL.createObjectURL(pr.blob) };
     touched = true; items.push(p); mount(p, ''); p.el.classList.add('pop'); setTimeout(() => p.el.classList && p.el.classList.remove('pop'), 320);
     select(p.id); updateHint(); snd('pop'); setStatus('Uploading picture…');
     const A = api();
@@ -471,6 +536,70 @@
       const i = items.indexOf(p); if (i >= 0) { items.splice(i, 1); p.el.remove(); if (selId === p.id) { selId = null; layoutSel(null); updateBar(); } updateHint(); }
       toast(e.message || 'The picture could not be uploaded.'); setStatus('');
     });
+  }
+
+  /* ---------------------------------------------------------------- crop (Canva style: drag the handles, or drag the picture inside the frame) */
+  let crop = null;
+  const CH = { n: [0, 1, 0, 0], s: [0, 0, 0, 1], w: [1, 0, 0, 0], e: [0, 0, 1, 0], nw: [1, 1, 0, 0], ne: [0, 1, 1, 0], sw: [1, 0, 0, 1], se: [0, 0, 1, 1] };   /* which sides (l,t,r,b) a handle moves */
+  function enterCrop(p) {
+    if (!editing || !isImg(p) || cropId) return;
+    if (!p.img) return toast('Wait a moment, the picture is still being uploaded.');
+    flushText(); closeMenu();
+    const a = document.activeElement; if (a && a.blur) a.blur();
+    const c = hasCrop(p) ? p.cr.slice() : [0, 0, 0, 0], th = p.rot * Math.PI / 180;
+    const Wf = p.w / Math.max(0.05, 1 - c[0] - c[2]), Hf = p.h / Math.max(0.05, 1 - c[1] - c[3]);
+    const ox = (c[0] - c[2]) / 2 * Wf, oy = (c[1] - c[3]) / 2 * Hf, wx = BOARD.x + p.x + p.w / 2, wy = BOARD.y + p.y + p.h / 2;   /* window centre; the full picture's centre is offset back from it */
+    const cx = wx - (ox * Math.cos(th) - oy * Math.sin(th)), cy = wy - (ox * Math.sin(th) + oy * Math.cos(th));
+    crop = { p, Wf, Hf, cx, cy, th, w: p.flip ? [c[2], c[1], c[0], c[3]] : c, was: { x: p.x, y: p.y, w: p.w, h: p.h, cr: p.cr ? p.cr.slice() : null } };
+    cropId = p.id; layoutSel(p); p.el.style.visibility = 'hidden';
+    cropEl.innerHTML = '<div class="cfull"><img alt="" draggable="false"></div><div class="cwin"><div class="cin"><img alt="" draggable="false"></div><i class="g1"></i><i class="g2"></i><i class="g3"></i><i class="g4"></i></div>' +
+      Object.keys(CH).map(k => '<b class="ch c-' + k + '" data-h="' + k + '"></b>').join('');
+    $$('img', cropEl).forEach(im => { im.src = imgUrl(p); });
+    cropEl.classList.add('on'); root.classList.add('cropping'); paintCrop(); updateBar(); snd('select');
+    setStatus('Crop: drag the handles, then press Done', 5000);
+  }
+  function paintCrop() {
+    const k = crop; if (!k) return; const w = k.w;
+    const ww = k.Wf * (1 - w[0] - w[2]), hh = k.Hf * (1 - w[1] - w[3]), ox = (w[0] - w[2]) / 2 * k.Wf, oy = (w[1] - w[3]) / 2 * k.Hf;
+    const cx = k.cx + ox * Math.cos(k.th) - oy * Math.sin(k.th), cy = k.cy + ox * Math.sin(k.th) + oy * Math.cos(k.th);
+    cropEl.style.left = (cx - ww / 2) + 'px'; cropEl.style.top = (cy - hh / 2) + 'px'; cropEl.style.width = ww + 'px'; cropEl.style.height = hh + 'px'; cropEl.style.transform = 'rotate(' + k.p.rot + 'deg)';
+    const full = { left: -w[0] * k.Wf + 'px', top: -w[1] * k.Hf + 'px', width: k.Wf + 'px', height: k.Hf + 'px', transform: k.p.flip ? 'scaleX(-1)' : '' };
+    Object.assign($('.cfull', cropEl).style, full); Object.assign($('.cin', cropEl).style, full);
+    cropEl.classList.toggle('tiny', ww < 90 || hh < 70);
+    k.ww = ww; k.hh = hh; k.wcx = cx; k.wcy = cy;
+  }
+  function cropReset() { if (!crop) return; crop.w = [0, 0, 0, 0]; paintCrop(); snd('select'); }
+  function cropDown(ev) {
+    if (!crop || (ev.button !== 0 && ev.pointerType === 'mouse')) return;
+    ev.preventDefault(); ev.stopPropagation();
+    const h = ev.target.closest('.ch'), k = crop, p0 = toStage(ev), w0 = k.w.slice(), co = Math.cos(k.th), si = Math.sin(k.th), MIN = 0.06;
+    const local = pt => { const dx = pt.x - p0.x, dy = pt.y - p0.y; return { x: dx * co + dy * si, y: -dx * si + dy * co }; };
+    track(m => {
+      const d = local(toStage(m)), dx = d.x / k.Wf, dy = d.y / k.Hf, n = w0.slice();
+      if (h) {
+        const f = CH[h.dataset.h];
+        if (f[0]) n[0] = clamp(w0[0] + dx, 0, 1 - w0[2] - MIN);
+        if (f[2]) n[2] = clamp(w0[2] - dx, 0, 1 - w0[0] - MIN);
+        if (f[1]) n[1] = clamp(w0[1] + dy, 0, 1 - w0[3] - MIN);
+        if (f[3]) n[3] = clamp(w0[3] - dy, 0, 1 - w0[1] - MIN);
+      } else {   /* drag the picture under the frame: the window slides the other way */
+        const sx = clamp(-dx, -w0[0], w0[2]), sy = clamp(-dy, -w0[1], w0[3]);
+        n[0] = w0[0] + sx; n[2] = w0[2] - sx; n[1] = w0[1] + sy; n[3] = w0[3] - sy;
+      }
+      k.w = n; paintCrop();
+    }, () => {});
+  }
+  async function exitCrop(apply) {
+    const k = crop; if (!k) return; const p = k.p;
+    crop = null; cropId = null; cropEl.classList.remove('on'); root.classList.remove('cropping'); cropEl.innerHTML = '';
+    if (apply) {
+      const w = k.w, c = p.flip ? [w[2], w[1], w[0], w[3]] : w;
+      p.cr = c.some(v => v > 0.001) ? c.map(v => Math.round(v * 10000) / 10000) : null;
+      p.w = Math.max(20, Math.round(k.ww)); p.h = Math.max(20, Math.round(k.hh)); p.x = Math.round(k.wcx - p.w / 2 - BOARD.x); p.y = Math.round(k.wcy - p.h / 2 - BOARD.y);
+      touched = true; layout(p); await renderImg(p); commit(); changed(); snd('confirm');
+    } else { p.x = k.was.x; p.y = k.was.y; p.w = k.was.w; p.h = k.was.h; p.cr = k.was.cr; layout(p); }
+    if (p.el) p.el.style.visibility = '';
+    layoutSel(byId(selId)); updateBar();
   }
 
   /* ---------------------------------------------------------------- the tray */
@@ -495,6 +624,7 @@
     const p = addPaperAt(k, x, y); if (p) commitNew(p, true);
   }
   function trayDown(ev, btn) {
+    if (cropId) return;
     if (!editing) return;
     if (ev.button !== 0 && ev.pointerType === 'mouse') return;
     ev.preventDefault();
@@ -524,6 +654,7 @@
   }
 
   /* ---------------------------------------------------------------- text editing helpers */
+  const $$ = (q, r) => Array.from((r || document).querySelectorAll(q));
   const inEd = (ed, n) => !!n && ed.contains(n.nodeType === 3 ? n.parentNode : n);
   function curRange(ed) { const s = getSelection(); if (s.rangeCount && inEd(ed, s.anchorNode) && inEd(ed, s.focusNode)) return s.getRangeAt(0); return null; }
   /* make sure the cursor is inside the selected paper before a toolbar command runs */
@@ -639,7 +770,14 @@
     pencil: SV('<path d="M4 20l1-4L16.5 4.5a2.1 2.1 0 0 1 3 3L8 19z"/><path d="M14 7l3 3"/>'),
     check: SV('<path d="M5 12.5l4.5 4.5L19 7"/>'),
     move: '<svg viewBox="0 0 16 16"><path d="M8 1v14M1 8h14M8 1L5.5 3.5M8 1l2.5 2.5M8 15l-2.5-2.5M8 15l2.5-2.5M1 8l2.5-2.5M1 8l2.5 2.5M15 8l-2.5-2.5M15 8l-2.5 2.5"/></svg>',
-    rot: '<svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.8-3.8M13 2v3.4h-3.4"/></svg>'
+    rot: '<svg viewBox="0 0 16 16"><path d="M13 8a5 5 0 1 1-1.8-3.8M13 2v3.4h-3.4"/></svg>',
+    crop: SV('<path d="M6 2v14a2 2 0 0 0 2 2h14"/><path d="M2 6h14a2 2 0 0 1 2 2v14"/>'),
+    bul: SV('<circle cx="4.5" cy="6" r="1.4" fill="#3a2412"/><circle cx="4.5" cy="12" r="1.4" fill="#3a2412"/><circle cx="4.5" cy="18" r="1.4" fill="#3a2412"/><path d="M9.5 6H21M9.5 12H21M9.5 18H21"/>'),
+    num: SV('<path d="M9.5 6H21M9.5 12H21M9.5 18H21"/><path d="M3.5 4.5L5 4v4.2" stroke-width="1.6"/><path d="M3.3 11.2c.3-.8 2.3-.9 2.3.3 0 1-1.7 1.6-2.4 2.5h2.6" stroke-width="1.6"/><path d="M3.3 17c.5-.6 2.3-.7 2.3.4s-1.2 1-1.2 1c.9 0 1.4.4 1.3 1.1-.2 1-2 1-2.5.2" stroke-width="1.6"/>'),
+    reset: SV('<path d="M4 12a8 8 0 1 0 2.5-5.8"/><path d="M4 4v5h5"/>'),
+    plus: SV('<path d="M12 5v14M5 12h14"/>'),
+    type: SV('<path d="M5 6V4h14v2M12 4v16M9 20h6"/>'),
+    book: SV('<path d="M4 5.5A2 2 0 0 1 6 4h13v15H6a2 2 0 0 0-2 2z"/><path d="M4 5.5V21"/>')
   };
   const tb = (cls, a, tip, inner) => '<button type="button" class="tb ' + cls + '" ' + a + ' data-tip="' + esc(tip) + '" aria-label="' + esc(tip) + '">' + inner + '</button>';
   function buildBar() {
@@ -648,18 +786,21 @@
     const looks = LOOKS.map(l => tb('look', 'data-look="' + l.k + '"', l.tip, l.n)).join('');
     barEl.dataset.m = 'none';
     barEl.innerHTML =
-      '<div class="gb-row r-none"><span class="gb-lab">TIP</span><span class="gb-tip">Click a <b>paper</b> or a <b>picture</b> on the board to edit it. Drag its <b>corner dots</b> to resize and the <b>round arrow</b> above it to turn it. Drag a paper out of the tray, or press <b>Add image</b>.</span></div>' +
+      '<div class="gb-row r-none"><span class="gb-lab">TIP</span><span class="gb-tip">Click a <b>paper</b> or a <b>picture</b> once to select it (press <b>Delete</b> to take it down). Click a selected paper, or double-click, to write. Drag its <b>corner dots</b> to resize and the <b>round arrow</b> above it to turn it. Drag a paper out of the tray, or press <b>Add image</b>.</span></div>' +
       '<div class="gb-row r-paper"><span class="gb-lab">TEXT</span>' + pre +
       '<span class="gb-sep"></span><button type="button" class="tb fnt" data-a="font" data-tip="Change the font of the selected text"><span class="fn">Font</span></button>' +
       tb('sm', 'data-a="smaller"', 'Smaller text', '<span class="aa">A−</span>') + tb('szn', 'data-a="size"', 'Pick a text size', '<span class="sn">16</span>') + tb('sm', 'data-a="bigger"', 'Bigger text', '<span class="aa big">A+</span>') +
       '<span class="gb-sep"></span>' + tb('sm', 'data-a="bold"', 'Bold (Ctrl+B)', '<b>B</b>') + tb('sm', 'data-a="italic"', 'Italic (Ctrl+I)', '<i>I</i>') + tb('sm', 'data-a="underline"', 'Underline (Ctrl+U)', '<u>U</u>') +
       '<span class="gb-sep"></span>' + sw +
       '<span class="gb-sep"></span>' + tb('sm', 'data-al="left"', 'Align left', ICON.l) + tb('sm', 'data-al="center"', 'Centre', ICON.c) + tb('sm', 'data-al="right"', 'Align right', ICON.r) +
-      tb('sm', 'data-a="orn"', 'Insert a decorative divider line', ICON.orn) + '</div>' +
+      tb('sm', 'data-a="orn"', 'Insert a decorative divider line', ICON.orn) +
+      '<span class="gb-sep"></span>' + tb('sm', 'data-a="bul"', 'Bullet points: press again to turn them off. (You can also type "- " at the start of a line.)', ICON.bul) + tb('sm', 'data-a="num"', 'Numbered list: press again to turn it off. (You can also type "1. " at the start of a line.)', ICON.num) + '</div>' +
       '<div class="gb-row r-image"><span class="gb-lab">PICTURE</span>' +
       tb('pri vin', 'data-a="vint"', 'Turn this picture into an old, parchment-style picture. Press again to get the normal picture back.', ICON.spark + '<span>Vintage style</span><i class="oo">OFF</i>') +
       '<span class="gb-sep"></span><span class="gb-mini">LOOK</span>' + looks +
-      '<span class="gb-sep"></span>' + tb('', 'data-a="flip"', 'Mirror the picture left to right', ICON.flip + 'Flip') + '</div>' +
+      '<span class="gb-sep"></span>' + tb('pri', 'data-a="crop"', 'Crop: cut away the edges of the picture. Drag the handles, or drag the picture inside the frame. (Double-click a picture to crop too.)', ICON.crop + '<span>Crop</span>') + tb('', 'data-a="flip"', 'Mirror the picture left to right', ICON.flip + 'Flip') + '</div>' +
+      '<div class="gb-row r-crop"><span class="gb-lab">CROP</span><span class="gb-tip">Drag the <b>handles</b> to cut the picture. Drag the picture <b>inside</b> the frame to move it.</span>' +
+      tb('', 'data-a="cropreset"', 'Bring the whole picture back', ICON.reset + 'Reset') + tb('', 'data-a="cropcancel"', 'Leave the crop as it was (Esc)', 'Cancel') + tb('pri ok', 'data-a="cropdone"', 'Apply the crop (Enter)', ICON.check + '<span>Done</span>') + '</div>' +
       '<div class="gb-row papc"><span class="gb-lab">BOARD</span>' +
       tb('pri', 'data-a="img"', 'Pin a picture from your device (PNG, JPG, GIF, WebP, SVG; transparent pictures work). You can also drop a file on the board or paste one.', ICON.img + 'Add image') +
       '<span class="gb-sep"></span>' + tb('', 'data-a="undo"', 'Undo the last change (Ctrl+Z)', ICON.undo + 'Undo') + tb('', 'data-a="redo"', 'Redo (Ctrl+Shift+Z)', ICON.redo + 'Redo') +
@@ -669,10 +810,18 @@
     barEl.addEventListener('pointerdown', ev => { if (ev.target.closest('button')) ev.preventDefault(); });   /* the cursor stays in the paper */
     barEl.addEventListener('click', onBar);
   }
+  /* bullets / numbers: a line gets data-l; the marker itself is drawn by CSS, so it never ends up as typed text */
+  function toggleList(ed, k) {
+    const bl = blocksIn(ed).filter(x => !x.classList.contains('b-orn')); if (!bl.length) return;
+    const all = bl.every(x => x.getAttribute('data-l') === k);
+    bl.forEach(x => { if (all) x.removeAttribute('data-l'); else x.setAttribute('data-l', k); });
+    touched = true; scheduleTextCommit(); changed(); updateBar();
+  }
   let clearArm = 0;
   function onBar(ev) {
     const b = ev.target.closest('button'); if (!b || !editing) return; closeMenu();
     const a = b.dataset.a;
+    if (cropId) { if (a === 'cropdone') return exitCrop(true); if (a === 'cropcancel') return exitCrop(false); if (a === 'cropreset') return cropReset(); return; }
     if (a === 'img') { fileEl.value = ''; fileEl.click(); return; }
     if (a === 'undo') return undo();
     if (a === 'redo') return redo();
@@ -689,7 +838,8 @@
     if (isImg(p)) {
       if (a === 'vint') { if (p.fx) { p.lastFx = p.fx; p.fx = 0; } else p.fx = p.lastFx || 1; snd('select'); return afterImg(p); }
       if (b.dataset.look) { p.fx = +b.dataset.look; snd('select'); return afterImg(p); }
-      if (a === 'flip') { p.flip = p.flip ? 0 : 1; return afterImg(p); }
+      if (a === 'crop') return enterCrop(p);
+      if (a === 'flip') { p.flip = p.flip ? 0 : 1; if (hasCrop(p)) { p.cr = [p.cr[2], p.cr[1], p.cr[0], p.cr[3]]; renderImg(p); } return afterImg(p); }
     } else {
       if (b.dataset.p) return withEd(ed => setPreset(ed, b.dataset.p));
       if (b.dataset.c) return withEd(ed => applyInline(ed, { color: b.dataset.c }));
@@ -698,6 +848,7 @@
         case 'font': return openMenu(b, 'font');
         case 'size': return openMenu(b, 'sz');
         case 'orn': return withEd(() => {}), openMenu(b, 'orn');
+        case 'bul': case 'num': return withEd(ed => toggleList(ed, a));
         case 'smaller': return withEd(ed => stepSize(ed, -1));
         case 'bigger': return withEd(ed => stepSize(ed, 1));
         case 'bold': case 'italic': case 'underline': return withEd(() => document.execCommand(a));
@@ -712,7 +863,7 @@
       case 'del': return removeItem(p);
     }
   }
-  function afterImg(p) { touched = true; layout(p); updateBar(); commit(); changed(); }
+  function afterImg(p) { touched = true; layout(p); renderImg(p); updateBar(); commit(); changed(); }
   function openMenu(btn, kind) {
     const p = cur(); if (!p || isImg(p)) return;
     const rb = btn.getBoundingClientRect(), sr = stage.getBoundingClientRect();
@@ -732,11 +883,12 @@
   /* keep the buttons in step with whatever is selected */
   function updateBar() {
     if (!barEl) return;
-    const p = cur(); barEl.dataset.m = !p ? 'none' : isImg(p) ? 'image' : 'paper';
+    const p = cur(); barEl.dataset.m = cropId ? 'crop' : !p ? 'none' : isImg(p) ? 'image' : 'paper';
     const un = barEl.querySelector('[data-a="undo"]'), re = barEl.querySelector('[data-a="redo"]');
     if (un) un.classList.toggle('off', !undoStack.length); if (re) re.classList.toggle('off', !redoStack.length);
     if (!p) return;
     if (isImg(p)) {
+      const cb = barEl.querySelector('[data-a="crop"]'); if (cb) cb.classList.toggle('on', hasCrop(p));
       const v = $('.vin', barEl); v.classList.toggle('on', !!p.fx); $('.oo', v).textContent = p.fx ? 'ON' : 'OFF';
       barEl.querySelectorAll('[data-look]').forEach(x => x.classList.toggle('on', +x.dataset.look === p.fx));
       return;
@@ -750,6 +902,7 @@
     ['bold', 'italic', 'underline'].forEach(c => { let v = false; try { v = has && document.queryCommandState(c); } catch (e) {} const x = barEl.querySelector('[data-a="' + c + '"]'); if (x) x.classList.toggle('on', !!v); });
     const al = b0 ? (b0.style.textAlign || (b0.classList.contains('b-title') ? 'center' : 'left')) : '';
     barEl.querySelectorAll('[data-al]').forEach(x => x.classList.toggle('on', x.dataset.al === al));
+    ['bul', 'num'].forEach(k => { const x = barEl.querySelector('[data-a="' + k + '"]'); if (x) x.classList.toggle('on', !!bl.length && bl.every(y => y.getAttribute('data-l') === k)); });
   }
   document.addEventListener('selectionchange', () => {
     if (!isOpen || !editing) return;
@@ -762,7 +915,7 @@
 
   /* ---------------------------------------------------------------- saving (only the owner, only while editing) */
   function serializeOne(p) {
-    if (isImg(p)) return p.img ? { id: p.id, style: 'image', x: Math.round(p.x), y: Math.round(p.y), w: Math.round(p.w), h: Math.round(p.h), rot: p.rot, z: p.z, seed: p.seed, html: '', img: p.img, fx: p.fx || 0, flip: p.flip ? 1 : 0, alpha: p.alpha ? 1 : 0 } : null;
+    if (isImg(p)) return p.img ? { id: p.id, style: 'image', x: Math.round(p.x), y: Math.round(p.y), w: Math.round(p.w), h: Math.round(p.h), rot: p.rot, z: p.z, seed: p.seed, html: '', img: p.img, fx: p.fx || 0, flip: p.flip ? 1 : 0, alpha: p.alpha ? 1 : 0, cr: hasCrop(p) ? p.cr.map(v => Math.round(v * 10000) / 10000) : undefined } : null;
     const ed = edOf(p);
     return { id: p.id, style: p.style, x: Math.round(p.x), y: Math.round(p.y), w: Math.round(p.w), h: Math.round(p.h), rot: p.rot, z: p.z, seed: p.seed, html: ed ? clean(ed.innerHTML) : p.html };
   }
@@ -777,16 +930,17 @@
     clearTimeout(saveT); saveT = 0;
     const A = api();
     if (!owner.mine) return;
-    if (!A || !A.saveBoard || !token()) { setStatus('Saved on this device', 2500); return; }
+    const id = boardId;
+    if (!id || id === 'local' || !A || !A.saveBoard || !token()) { setStatus('Saved on this device', 2500); return; }
     if (saving) { again = true; return; }
     saving = true;
     try {
-      const r = await A.saveBoard(serialize());
+      const r = await A.saveBoard(id, serialize());
       saveLocal(false, r && r.updatedAt);
       setStatus('All saved', 2200);
     } catch (e) { setStatus('Saved on this device (' + esc(e && e.message ? e.message : 'the server could not be reached') + ')', 6000); }
     saving = false;
-    if (again) { again = false; pushServer(); }
+    if (again) { again = false; if (id === boardId) pushServer(); }
   }
   let stT = 0;
   function setStatus(html, ms) { if (!statusEl) return; const a = $('.sa', statusEl); a.innerHTML = html; clearTimeout(stT); if (ms) stT = setTimeout(() => { a.innerHTML = ''; }, ms); }
@@ -802,32 +956,116 @@
     updateHint(); updateBar();
   }
   /* a board that was changed on this device but never reached the server is sent up quietly */
-  async function pushQuiet() { const A = api(); if (!A || !A.saveBoard || !token()) return; try { const r = await A.saveBoard(serialize()); saveLocal(false, r && r.updatedAt); } catch (e) {} }
+  async function pushQuiet() { const A = api(), id = boardId; if (!A || !A.saveBoard || !token() || !id || id === 'local') return; try { const r = await A.saveBoard(id, serialize()); saveLocal(false, r && r.updatedAt); } catch (e) {} }
+  const fresh = () => { undoStack = []; redoStack = []; lastSnap = snap(); updateBar(); };
   async function loadBoard() {
-    const seq = ++loadSeq, A = api(), id = owner.id;
+    const seq = ++loadSeq, A = api(), bid = boardId;
+    if (!bid) return;
     if (!owner.mine) {
       if (!A || !A.getBoard) return;
-      try { const srv = await A.getBoard(id); if (seq !== loadSeq || !isOpen) return; setItems(srv.papers); }
+      try { const srv = await A.getBoard(bid); if (seq !== loadSeq || !isOpen) return; setItems(srv.papers); fresh(); }
       catch (e) { if (seq === loadSeq) setStatus('Could not load this board right now', 4000); }
       return;
     }
     let local = null;
     try { local = JSON.parse(localStorage.getItem(userKey()) || 'null'); } catch (e) {}
-    if (local && Array.isArray(local.papers)) setItems(local.papers);
-    if (!A || !A.getBoard || !token()) return;
+    if (local && Array.isArray(local.papers)) { setItems(local.papers); fresh(); }
+    if (!A || !A.getBoard || !token() || bid === 'local') return;
     try {
-      const srv = await A.getBoard();
+      const srv = await A.getBoard(bid);
       if (seq !== loadSeq || !isOpen) return;
       const st = Date.parse(srv.updatedAt || 0) || 0, lt = local ? Date.parse(local.updatedAt || 0) || 0 : 0;
       if (touched || (local && local.dirty && lt > st) || (!srv.updatedAt && local && local.papers && local.papers.length)) { if (editing && touched) pushServer(); else pushQuiet(); return; }
-      if (srv.updatedAt) { setItems(srv.papers); saveLocal(false, srv.updatedAt); }
-    } catch (e) { setStatus('Offline: your notes are kept on this device', 4000); }
+      if (srv.updatedAt) { setItems(srv.papers); saveLocal(false, srv.updatedAt); fresh(); }
+    } catch (e) { if (seq === loadSeq) setStatus('Offline: your notes are kept on this device', 4000); }
+  }
+
+  /* ---------------------------------------------------------------- several boards (tabs above the wood): one per book, story, project... */
+  let initSeq = 0, rmArm = 0;
+  async function initBoards() {
+    const my = ++initSeq, A = api(); boards = []; boardId = null; paintTabs();
+    let list = null;
+    try { if (A && A.getBoards) list = await A.getBoards(owner.id); } catch (e) {}
+    if (my !== initSeq || !isOpen) return;
+    if (!list) { if (owner.mine) boards = [{ id: 'local', name: 'My board' }]; else setStatus('Could not load this board right now', 4000); }
+    else boards = list.map(b => ({ id: String(b.id), name: b.name || 'My board' }));
+    if (!boards.length && owner.mine) {
+      let b = null; try { if (A && A.createBoard && token()) b = await A.createBoard('My board'); } catch (e) {}
+      if (my !== initSeq || !isOpen) return;
+      boards = [b ? { id: String(b.id), name: b.name || 'My board' } : { id: 'local', name: 'My board' }];
+    }
+    let last = ''; try { last = localStorage.getItem('grove_lastboard_' + owner.id) || ''; } catch (e) {}
+    boardId = (boards.find(b => b.id === last) || boards[0] || {}).id || null;
+    paintTabs(); paintTop();
+    if (boardId) loadBoard();
+  }
+  async function flushSave() {
+    flushText();
+    if (owner.mine && (touched || saveT)) { saveLocal(true); clearTimeout(saveT); saveT = 0; again = false; await pushServer(); }
+    let n = 0; while (saving && n++ < 80) await new Promise(r => setTimeout(r, 50));
+  }
+  async function switchBoard(id) {
+    if (id === boardId || !boards.some(b => b.id === id)) return;
+    if (cropId) await exitCrop(true);
+    deselect(); closeMenu(); const a = document.activeElement; if (a && a.blur) a.blur();
+    await flushSave();
+    boardId = id; try { localStorage.setItem('grove_lastboard_' + owner.id, id); } catch (e) {}
+    touched = false; undoStack = []; redoStack = []; lastSnap = '[]';
+    setItems([]); setStatus(''); setUndo(''); paintTabs(); paintTop(); snd('flip'); loadBoard();
+  }
+  async function newBoard() {
+    if (!(editing && owner.mine) || boards.length >= MAX_BOARDS) return;
+    const A = api(); if (!A || !A.createBoard || !token()) return toast('Sign in to keep more than one board.');
+    try {
+      await flushSave();
+      const b = await A.createBoard('Board ' + (boards.length + 1));
+      boards.push({ id: String(b.id), name: b.name || 'New board' });
+      boardId = null; await switchBoard(String(b.id)); renameStart();
+    } catch (e) { toast(e.message || 'Could not start a new board.'); }
+  }
+  function renameStart() {
+    if (!(editing && owner.mine)) return;
+    const t = $('.gt.on', tabsEl), b = boards.find(x => x.id === boardId); if (!t || !b || $('input', t)) return;
+    const n = $('.n', t), i = mk('input', 'bi'); i.maxLength = 40; i.value = b.name; i.setAttribute('aria-label', 'Board name'); n.replaceWith(i); i.focus(); i.select();
+    let done = false;
+    const fin = async ok => {
+      if (done) return; done = true;
+      const v = i.value.trim().replace(/\s+/g, ' ').slice(0, 40);
+      if (ok && v && v !== b.name) {
+        const old = b.name; b.name = v; paintTabs(); paintTop();
+        if (b.id !== 'local') { try { await api().renameBoard(b.id, v); } catch (e) { b.name = old; paintTabs(); paintTop(); toast(e.message || 'Could not rename the board.'); } }
+      } else paintTabs();
+    };
+    i.addEventListener('keydown', ev => { if (ev.key === 'Enter') { ev.preventDefault(); fin(true); } else if (ev.key === 'Escape') { ev.preventDefault(); fin(false); } });
+    i.addEventListener('blur', () => fin(true));
+  }
+  async function removeBoard(btn) {
+    if (!(editing && owner.mine) || boards.length < 2) return;
+    if (!rmArm) { btn.classList.add('arm'); btn.innerHTML = '<span>Delete this board?</span>'; rmArm = setTimeout(() => { rmArm = 0; paintTabs(); }, 3500); return; }
+    clearTimeout(rmArm); rmArm = 0;
+    const id = boardId, A = api();
+    try { if (id !== 'local') await A.deleteBoard(id); } catch (e) { paintTabs(); return toast(e.message || 'Could not delete the board.'); }
+    try { localStorage.removeItem('grove_board_' + id); } catch (e) {}
+    boards = boards.filter(b => b.id !== id); touched = false; clearTimeout(saveT); saveT = 0; boardId = null;
+    await switchBoard(boards[0].id); toast('Board deleted');
+  }
+  function paintTabs() {
+    if (!tabsEl) return;
+    const ed = editing && owner.mine;
+    let h = '<span class="gt-l">' + ICON.book + '<b>BOARDS</b></span>';
+    boards.forEach(b => {
+      const on = b.id === boardId;
+      h += '<div class="gt' + (on ? ' on' : '') + '" role="tab" aria-selected="' + on + '" data-id="' + esc(b.id) + '" data-tip="' + (on ? (ed ? 'Click to rename this board' : 'The board you are looking at') : 'Open this board') + '"><span class="n">' + esc(b.name) + '</span>' +
+        (ed && on ? '<button type="button" class="x" data-a="rn" data-tip="Rename this board">' + ICON.pencil + '</button>' + (boards.length > 1 ? '<button type="button" class="x dg" data-a="rm" data-tip="Delete this board">' + ICON.del + '</button>' : '') : '') + '</div>';
+    });
+    if (ed && boards.length < MAX_BOARDS) h += '<button type="button" class="gt add" data-a="new" data-tip="Start a new board, for example one for a book">' + ICON.plus + '<span>New board</span></button>';
+    tabsEl.innerHTML = h; tabsEl.classList.toggle('one', boards.length < 2 && !ed);
   }
 
   /* ---------------------------------------------------------------- edit mode, owner label, hints */
   function paintTop() {
     const nm = owner.name || 'Player';
-    $('.so', statusEl).textContent = owner.mine ? (editing ? 'Editing your board' : 'Your notice board') : nm + '’s notice board · view only';
+    const bn = boardName(); $('.so', statusEl).textContent = owner.mine ? (editing ? 'Editing · ' : '') + bn : nm + '’s notice board · ' + bn + ' · view only';
     root.classList.toggle('mine', !!owner.mine);
     editBtn.innerHTML = (editing ? ICON.check : ICON.pencil) + '<span>' + (editing ? 'Done editing' : 'Edit board') + '</span>';
     editBtn.classList.toggle('go', editing);
@@ -846,11 +1084,12 @@
     if (on && !owner.mine) return;
     if (editing === on) return;
     if (!on) {
+      if (cropId) exitCrop(true);
       flushText(); deselect(); closeMenu();
       const a = document.activeElement; if (a && a.blur) a.blur();
       if (touched || saveT) { saveLocal(true); pushServer(); }
     }
-    editing = on; root.classList.toggle('editing', on); root.classList.toggle('viewing', !on);
+    editing = on; paintTabs(); root.classList.toggle('editing', on); root.classList.toggle('viewing', !on);
     items.forEach(p => { const ed = edOf(p); if (ed) ed.contentEditable = on ? 'true' : 'false'; });
     if (on) { undoStack = []; redoStack = []; lastSnap = snap(); }
     paintTop(); updateBar(); snd(on ? 'select' : 'confirm');
@@ -877,14 +1116,35 @@
   function build() {
     if (!document.getElementById('gb-fonts')) { const l = mk('link'); l.id = 'gb-fonts'; l.rel = 'stylesheet'; l.href = FONT_LINK; document.head.appendChild(l); }
     root = mk('div'); root.id = 'gb'; root.className = 'viewing'; root.setAttribute('role', 'dialog'); root.setAttribute('aria-label', 'Notice board');
-    root.innerHTML = '<div class="gb-blur"></div><div id="gb-stage"><img class="gb-bg" src="ui/board.png" alt="" draggable="false"><div id="gb-hint"></div><div id="gb-board"></div><div id="gb-tray"></div><div id="gb-ghost"></div><div id="gb-bar"></div>' +
+    root.innerHTML = '<div class="gb-blur"></div><div id="gb-stage"><img class="gb-bg" src="ui/board.png" alt="" draggable="false"><div id="gb-hint"></div><div id="gb-tabs" role="tablist" aria-label="Your boards"></div><div id="gb-board"></div><div id="gb-tray"></div><div id="gb-ghost"></div><div id="gb-bar"></div>' +
       '<button id="gb-back" type="button">' + ICON.back + 'Back to the Grove<kbd>ESC</kbd></button>' +
       '<div id="gb-status" aria-live="polite"><span class="so"></span><span class="sa"></span><span class="sb"></span></div>' +
       '<button id="gb-edit" type="button"></button><div id="gb-drop"><div>Drop a picture to pin it</div></div>' +
       '<input id="gb-file" type="file" accept="image/*,.svg,.avif" multiple hidden></div>';
     document.body.appendChild(root);
-    stage = $('#gb-stage', root); boardEl = $('#gb-board', root); ghost = $('#gb-ghost', root); trayEl = $('#gb-tray', root); barEl = $('#gb-bar', root); hintEl = $('#gb-hint', root); statusEl = $('#gb-status', root); fileEl = $('#gb-file', root); editBtn = $('#gb-edit', root);
+    stage = $('#gb-stage', root); boardEl = $('#gb-board', root); ghost = $('#gb-ghost', root); trayEl = $('#gb-tray', root); barEl = $('#gb-bar', root); hintEl = $('#gb-hint', root); tabsEl = $('#gb-tabs', root); statusEl = $('#gb-status', root); fileEl = $('#gb-file', root); editBtn = $('#gb-edit', root);
     buildTray(); buildBar(); buildSel();
+    cropEl = mk('div'); cropEl.id = 'gb-crop'; stage.appendChild(cropEl);
+    cropEl.addEventListener('pointerdown', cropDown);
+    actEl = mk('div'); actEl.id = 'gb-act';
+    actEl.innerHTML = '<div class="g-paper">' + tb('pri', 'data-a="type"', 'Click into the paper and write', ICON.type + '<span>Write</span>') + '</div>' +
+      '<div class="g-img">' + tb('pri', 'data-a="crop"', 'Crop the picture', ICON.crop + '<span>Crop</span>') + tb('vin', 'data-a="vint"', 'Old parchment style on / off', ICON.spark + '<span>Vintage</span>') + '</div>' +
+      tb('', 'data-a="dup"', 'Make a copy (Ctrl+D)', ICON.dup + '<span>Copy</span>') + tb('dgr', 'data-a="del"', 'Delete (Delete key)', ICON.del + '<span>Delete</span>');
+    stage.appendChild(actEl);
+    actEl.addEventListener('pointerdown', ev => { ev.stopPropagation(); if (ev.target.closest('button')) ev.preventDefault(); });
+    actEl.addEventListener('click', ev => {
+      const b = ev.target.closest('button'), p = cur(); if (!b || !p || !editing || cropId) return; const a = b.dataset.a;
+      if (a === 'type') { const ed = edOf(p); if (ed) { ed.focus({ preventScroll: true }); const r = document.createRange(), g = getSelection(); r.selectNodeContents(ed); r.collapse(false); g.removeAllRanges(); g.addRange(r); } }
+      else if (a === 'crop') enterCrop(p);
+      else if (a === 'vint') { if (p.fx) { p.lastFx = p.fx; p.fx = 0; } else p.fx = p.lastFx || 1; snd('select'); afterImg(p); }
+      else if (a === 'dup') duplicate(p); else if (a === 'del') removeItem(p);
+    });
+    tabsEl.addEventListener('click', ev => {
+      const x = ev.target.closest('.x'), add = ev.target.closest('.add'), t = ev.target.closest('.gt:not(.add)');
+      if (add) return newBoard();
+      if (x) { if (x.dataset.a === 'rn') return renameStart(); if (x.dataset.a === 'rm') return removeBoard(x); }
+      if (t && !ev.target.closest('input')) { if (t.dataset.id === boardId) renameStart(); else switchBoard(t.dataset.id); }
+    });
     $('#gb-back', root).onclick = closeBoard;
     editBtn.onclick = () => setEditing(!editing);
     fileEl.addEventListener('change', () => { const f = Array.from(fileEl.files || []); fileEl.value = ''; if (f.length) addImageFiles(f); });
@@ -911,12 +1171,17 @@
     addEventListener('keydown', ev => {
       if (!isOpen) return;
       const ae = document.activeElement, inTxt = !!(ae && ae.closest && ae.closest('.txt')), inInput = !!(ev.target.closest && ev.target.closest('input,textarea'));
+      if (inInput && ev.target.classList && ev.target.classList.contains('bi')) return;   /* the board-name box handles its own keys */
+      if (cropId) { if (ev.key === 'Escape') { ev.preventDefault(); exitCrop(false); } else if (ev.key === 'Enter') { ev.preventDefault(); exitCrop(true); } return; }
       if (ev.key === 'Escape') {
         if (menuEl) { closeMenu(); return; }
         if (inTxt) { ae.blur(); return; }
         if (selId) { deselect(); return; }
         if (editing) { setEditing(false); return; }
         closeBoard(); return;
+      }
+      if (editing && inTxt && ev.key === 'Delete' && !ev.ctrlKey && !ev.metaKey) {   /* Delete on a paper with no writing takes the whole paper down */
+        const q = cur(); if (q && !isImg(q) && isBlank(edOf(q).innerHTML)) { ev.preventDefault(); removeItem(q); return; }
       }
       if (!editing || inTxt || inInput) return;
       const mod = ev.ctrlKey || ev.metaKey, k = ev.key.toLowerCase();
@@ -925,6 +1190,7 @@
       const p = cur(); if (!p) return;
       if (mod && k === 'd') { ev.preventDefault(); duplicate(p); return; }
       if (ev.key === 'Delete' || ev.key === 'Backspace') { ev.preventDefault(); removeItem(p); return; }
+      if (ev.key === 'Enter') { ev.preventDefault(); if (isImg(p)) enterCrop(p); else { const ed = edOf(p); if (ed) { ed.focus({ preventScroll: true }); const r = document.createRange(), g = getSelection(); r.selectNodeContents(ed); r.collapse(false); g.removeAllRanges(); g.addRange(r); } } return; }
       const step = ev.shiftKey ? 10 : 1, mv = { ArrowLeft: [-step, 0], ArrowRight: [step, 0], ArrowUp: [0, -step], ArrowDown: [0, step] }[ev.key];
       if (mv) { ev.preventDefault(); p.x += mv[0]; p.y += mv[1]; layout(p); touched = true; changed(); clearTimeout(nudgeT); nudgeT = setTimeout(commit, 500); }
     }, true);
@@ -939,10 +1205,11 @@
     fit(); isOpen = true; editing = false; touched = false; clearTimeout(saveT); saveT = 0;
     undoStack = []; redoStack = []; lastSnap = '[]';
     root.classList.remove('editing'); root.classList.add('viewing', 'open');
-    setItems([]); setStatus(''); setUndo(''); paintTop(); snd('flip'); loadBoard(); updateBar();
+    boards = []; boardId = null; cropId = null; crop = null; setItems([]); setStatus(''); setUndo(''); paintTop(); paintTabs(); snd('flip'); initBoards(); updateBar();
   }
   function closeBoard() {
     if (!isOpen) return;
+    if (cropId) exitCrop(true);
     setEditing(false); closeMenu(); deselect(); const a = document.activeElement; if (a && a.blur) a.blur();
     if (owner.mine && (touched || saveT)) { saveLocal(true); pushServer(); }
     isOpen = false; root.classList.remove('open'); snd('back');

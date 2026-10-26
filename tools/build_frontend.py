@@ -85,7 +85,7 @@ s = frontend_cards.apply(s)
 
 # 6. game feel: animations (public/fx.css) + synthesized sounds and particles (public/fx.js), loaded last
 s = lit1('</style></head>', '</style>\n<link rel="stylesheet" href="fx.css">\n<link rel="stylesheet" href="board.css"></head>', s)
-s = lit1('</script></body></html>', '</script>\n<script src="fx.js"></script>\n<script src="board.js"></script></body></html>', s)
+s = lit1('</script></body></html>', '</script>\n<script src="fx.js"></script>\n<script src="vintage.js"></script>\n<script src="board.js"></script></body></html>', s)
 
 # 7. start screen ("Press Any Button"): public/title.css, title.js, title.jpg
 s = lit1('<head>', '<head>' + '<link rel="preload" as="image" href="title.jpg"><link rel="stylesheet" href="title.css">', s)

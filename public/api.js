@@ -63,10 +63,14 @@
     submitJournal: (text, date) => request('POST', '/api/journals', { text, date }),
     deleteJournal: (id) => request('DELETE', `/api/journals/${id}`),
 
-    // the notice board (Reminders tab): papers and pictures pinned on a board. getBoard -> { papers, updatedAt }, saveBoard(papers) -> { updatedAt }
-    // getBoard() = your own; getBoard(playerId) = anyone's (read only). Only the owner can saveBoard.
-    getBoard: (playerId) => request('GET', playerId ? `/api/board/${playerId}` : '/api/board').then((d) => d.board),
-    saveBoard: (papers) => request('PUT', '/api/board', { papers }),
+    // the notice boards (Reminders tab). A player keeps several named boards; everybody can read them, only the owner can change them.
+    // getBoards(playerId) -> [{ id, name, count, updatedAt }]; getBoard(boardId) -> { id, name, papers, updatedAt }
+    getBoards: (playerId) => request('GET', `/api/board/list/${playerId}`).then((d) => d.boards),
+    getBoard: (boardId) => request('GET', `/api/board/b/${boardId}`).then((d) => d.board),
+    createBoard: (name) => request('POST', '/api/board/b', { name }).then((d) => d.board),
+    saveBoard: (boardId, papers) => request('PUT', `/api/board/b/${boardId}`, { papers }),
+    renameBoard: (boardId, name) => request('PUT', `/api/board/b/${boardId}`, { name }).then((d) => d.board),
+    deleteBoard: (boardId) => request('DELETE', `/api/board/b/${boardId}`),
     // pin a picture: upload the (already shrunk) image, get its id back
     async uploadBoardImage(blob) {
       const res = await fetch(API_BASE + '/api/board/images', {

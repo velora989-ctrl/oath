@@ -53,6 +53,8 @@ function cleanHtml(html) {
       }
       const o = /\sdata-o\s*=\s*"([1-4])"/i.exec(' ' + attrs);
       if (o) out += ` data-o="${o[1]}"`;
+      const l = /\sdata-l\s*=\s*"(bul|num)"/i.exec(' ' + attrs);
+      if (l) out += ` data-l="${l[1].toLowerCase()}"`;
       const st = /\sstyle\s*=\s*"([^"]*)"/i.exec(' ' + attrs);
       if (st) {
         const v = cleanStyle(st[1].replace(/&quot;/g, '"').replace(/&#39;/g, "'"));
@@ -60,6 +62,14 @@ function cleanHtml(html) {
       }
       return `<${tag}${out}${tag === 'br' ? '/' : ''}>`;
     });
+}
+// the part of a picture that is trimmed away: [left, top, right, bottom] as fractions; at least 5% must stay visible
+function cleanCrop(c) {
+  if (!Array.isArray(c) || c.length !== 4) return undefined;
+  const v = c.map((n) => num(n, 0, 0.95, 0));
+  if (v[0] + v[2] > 0.95) { v[0] = 0; v[2] = 0; }
+  if (v[1] + v[3] > 0.95) { v[1] = 0; v[3] = 0; }
+  return v.some((n) => n > 0.0005) ? v.map((n) => Math.round(n * 10000) / 10000) : undefined;
 }
 function cleanPaper(p) {
   if (!p || typeof p !== 'object') return null;
@@ -80,6 +90,7 @@ function cleanPaper(p) {
       fx: Math.round(num(p.fx, 0, 3, 0)),
       flip: p.flip ? 1 : 0,
       alpha: p.alpha ? 1 : 0,
+      cr: cleanCrop(p.cr),
     };
   }
   if (!STYLES.has(p.style)) return null;
@@ -145,43 +156,97 @@ router.get('/images/:id', async (req, res, next) => {
   }
 });
 
-// GET /api/board/:playerId  (public) -> { board: { papers, updatedAt } }. Anyone can look at a board; only its owner can change it (PUT /).
-router.get('/:playerId', async (req, res, next) => {
+// ---- boards: a player can keep several, each with its own name -----------------------------------------------------------
+const MAX_BOARDS = 12;
+const cleanName = (v) => String(v == null ? '' : v).replace(/[\u0000-\u001f<>]/g, '').replace(/\s+/g, ' ').trim().slice(0, 40);
+const listDto = (b) => ({ id: String(b._id), name: b.name || 'My board', updatedAt: b.updatedAt || null, count: b.count != null ? b.count : Array.isArray(b.papers) ? b.papers.length : 0 });
+
+// GET /api/board/list/:playerId  (public) -> { boards: [{ id, name, count, updatedAt }] }, oldest first
+router.get('/list/:playerId', async (req, res, next) => {
   try {
     if (!ID24.test(req.params.playerId)) return res.status(404).json({ error: 'Not found' });
-    const b = await Board.findOne({ player: req.params.playerId });
-    res.json({ board: { papers: b ? b.papers : [], updatedAt: b ? b.updatedAt : null } });
+    const rows = await Board.find({ player: req.params.playerId }).sort({ order: 1, createdAt: 1 }).select('name order count updatedAt');
+    res.json({ boards: rows.map(listDto) });
   } catch (err) {
     next(err);
   }
 });
 
-// GET /api/board -> { board: { papers, updatedAt } } (your own board; updatedAt is null before the first save)
-router.get('/', auth, async (req, res, next) => {
+// GET /api/board/b/:id  (public) -> { board: { id, name, player, papers, updatedAt } }. Anyone can look; only the owner can change (PUT).
+router.get('/b/:id', async (req, res, next) => {
   try {
-    const b = await Board.findOne({ player: req.player._id });
-    res.json({ board: { papers: b ? b.papers : [], updatedAt: b ? b.updatedAt : null } });
+    if (!ID24.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    const b = await Board.findById(req.params.id);
+    if (!b) return res.status(404).json({ error: 'That board does not exist any more.' });
+    res.json({ board: { id: String(b._id), name: b.name || 'My board', player: String(b.player), papers: b.papers || [], updatedAt: b.updatedAt || null } });
   } catch (err) {
     next(err);
   }
 });
 
-// PUT /api/board  { papers: [...] } -> { updatedAt }. Replaces your whole board.
-router.put('/', auth, async (req, res, next) => {
+// POST /api/board/b  { name } -> { board: { id, name } }. Makes a new, empty board for the logged-in player.
+router.post('/b', auth, async (req, res, next) => {
   try {
-    const list = req.body && req.body.papers;
-    if (!Array.isArray(list)) return res.status(400).json({ error: 'papers must be a list' });
-    if (list.length > MAX_PAPERS) return res.status(400).json({ error: `At most ${MAX_PAPERS} papers fit on the board` });
-    const papers = list.map(cleanPaper).filter(Boolean);
-    const b = await Board.findOneAndUpdate({ player: req.player._id }, { $set: { papers } }, { upsert: true, new: true, setDefaultsOnInsert: true });
-    // pictures that are no longer on the board (and are over a day old, so an Undo or a fresh upload is never hit) are deleted
-    const keep = papers.filter((p) => p.img).map((p) => p.img);
-    BoardImage.deleteMany({ player: req.player._id, _id: { $nin: keep }, createdAt: { $lt: new Date(Date.now() - 24 * 3600 * 1000) } }).catch(() => {});
-    res.json({ updatedAt: b.updatedAt });
+    const name = cleanName(req.body && req.body.name);
+    if (!name) return res.status(400).json({ error: 'Give the board a name first.' });
+    if ((await Board.countDocuments({ player: req.player._id })) >= MAX_BOARDS) return res.status(400).json({ error: `You can keep up to ${MAX_BOARDS} boards. Remove one first.` });
+    const b = await Board.create({ player: req.player._id, name, order: Date.now(), papers: [], count: 0 });
+    res.status(201).json({ board: listDto(b) });
   } catch (err) {
     next(err);
   }
 });
+
+// PUT /api/board/b/:id  { papers?, name? } -> { updatedAt, board }. Replaces the papers and / or renames. Owner only.
+router.put('/b/:id', auth, async (req, res, next) => {
+  try {
+    if (!ID24.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    const set = {};
+    if (req.body && req.body.name !== undefined) {
+      const name = cleanName(req.body.name);
+      if (!name) return res.status(400).json({ error: 'Give the board a name first.' });
+      set.name = name;
+    }
+    if (req.body && req.body.papers !== undefined) {
+      const list = req.body.papers;
+      if (!Array.isArray(list)) return res.status(400).json({ error: 'papers must be a list' });
+      if (list.length > MAX_PAPERS) return res.status(400).json({ error: `At most ${MAX_PAPERS} papers fit on the board` });
+      set.papers = list.map(cleanPaper).filter(Boolean);
+      set.count = set.papers.length;
+    }
+    if (!Object.keys(set).length) return res.status(400).json({ error: 'Nothing to save' });
+    const b = await Board.findOneAndUpdate({ _id: req.params.id, player: req.player._id }, { $set: set }, { new: true });
+    if (!b) return res.status(404).json({ error: 'That board is not yours, or it does not exist any more.' });
+    if (set.papers) cleanupImages(req.player._id);
+    res.json({ updatedAt: b.updatedAt, board: listDto(b) });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /api/board/b/:id  -> { ok }. Owner only; the last board cannot be removed.
+router.delete('/b/:id', auth, async (req, res, next) => {
+  try {
+    if (!ID24.test(req.params.id)) return res.status(404).json({ error: 'Not found' });
+    if ((await Board.countDocuments({ player: req.player._id })) <= 1) return res.status(400).json({ error: 'Keep at least one board. You can rename it instead.' });
+    const r = await Board.deleteOne({ _id: req.params.id, player: req.player._id });
+    if (!r || !r.deletedCount) return res.status(404).json({ error: 'That board is not yours, or it does not exist any more.' });
+    cleanupImages(req.player._id);
+    res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// pictures that are on none of the player's boards any more (and are over a day old, so an Undo or a fresh upload is never hit) are deleted
+async function cleanupImages(playerId) {
+  try {
+    const all = await Board.find({ player: playerId }).select('papers.img');
+    const keep = [];
+    all.forEach((b) => (b.papers || []).forEach((p) => p.img && keep.push(p.img)));
+    await BoardImage.deleteMany({ player: playerId, _id: { $nin: keep }, createdAt: { $lt: new Date(Date.now() - 24 * 3600 * 1000) } });
+  } catch (e) { /* best effort */ }
+}
 
 // a picture above the size limit
 // eslint-disable-next-line no-unused-vars
@@ -191,4 +256,4 @@ router.use((err, req, res, next) => {
 });
 
 module.exports = router;
-module.exports._test = { cleanHtml, cleanPaper, sniffMime };
+module.exports._test = { cleanHtml, cleanPaper, sniffMime, cleanCrop, cleanName };
