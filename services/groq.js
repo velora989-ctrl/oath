@@ -6,6 +6,7 @@ const { promptCatalogue, toModelText, classify, limitName, limitText, hasPrivate
 const emojiCatalogue = require('./emojis');
 const archetypes = require('./archetypes');
 const { flattenJournal } = require('./journalText');
+const { chat } = require('./groqClient');
 
 const PROMPT_TEMPLATE = fs.readFileSync(path.join(__dirname, '../prompts/journalPrompt.txt'), 'utf8');
 const STATS = ['int', 'end', 'str', 'arc', 'wis'];
@@ -55,74 +56,19 @@ async function buildSystemPrompt(playerId, archetype) {
     .replace('{{PREVIOUS_EVALUATIONS}}', () => prev);
 }
 
-// ---------- Groq call (OpenAI-compatible chat completions) ----------
-
-async function callGroqModel(model, key, systemPrompt, journalText) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 60_000);
-  try {
-
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model,
-        temperature: 0.3,
-        max_completion_tokens: 8000,      // room for reasoning + JSON output
-        reasoning_effort: 'low',          // gpt-oss supports low | medium | high
-        response_format: { type: 'json_object' },
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user', content: `JOURNAL:\n${journalText}` }
-        ],
-      }),
-
-    });
-    if (!res.ok) {
-      const err = new Error(`Groq HTTP ${res.status} (${model}): ${(await res.text()).slice(0, 300)}`);
-      err.status = res.status;
-      throw err;
-    }
-    const data = await res.json();
-    const choice = data.choices?.[0];
-    const text = choice?.message?.content;
-    if (!text || !text.trim()) {
-      console.error('Empty Groq response:', {
-        model,
-        finish_reason: choice?.finish_reason,
-        usage: data.usage,
-        hasReasoning: !!choice?.message?.reasoning,
-        journalLen: journalText?.length,
-      });
-      throw new Error(`Empty Groq response (${model}, finish=${choice?.finish_reason})`);
-    }
-    return text;
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
-// GROQ_MODEL may be a comma-separated list; the next model is tried only if one is missing/unavailable (404).
-async function callGroq(systemPrompt, journalText) {
-  const key = process.env.GROQ_API_KEY;
-  if (!key) throw new Error('GROQ_API_KEY is not set');
-  const models = (process.env.GROQ_MODEL || 'openai/gpt-oss-120b,openai/gpt-oss-20b')
-    .split(',')
-    .map((m) => m.trim())
-    .filter(Boolean);
-
-  let lastErr;
-  for (const model of models) {
-    try {
-      return await callGroqModel(model, key, systemPrompt, journalText);
-    } catch (err) {
-      lastErr = err;
-      if (err.status !== 404) throw err;
-      console.warn(`Groq model ${model} unavailable, trying next`);
-    }
-  }
-  throw lastErr;
+// ---------- Groq call ----------
+// The HTTP call, key and model fallback (GROQ_API_KEY / GROQ_MODEL from .env) live in services/groqClient.js,
+// shared with the boss-name Suggest button.
+function callGroq(systemPrompt, journalText) {
+  return chat({
+    system: systemPrompt,
+    user: `JOURNAL:\n${journalText}`,
+    temperature: 0.3,
+    maxTokens: 8000,          // room for reasoning + JSON output
+    reasoningEffort: 'low',   // gpt-oss supports low | medium | high
+    json: true,
+    timeoutMs: 60_000,
+  });
 }
 
 function parseJson(text) {

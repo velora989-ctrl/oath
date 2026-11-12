@@ -1,16 +1,24 @@
-require('dotenv').config();
 const path = require('path');
+// load .env from the project folder, whatever directory the server is started from
+require('dotenv').config({ path: path.join(__dirname, '.env') });
 const express = require('express');
 const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
+const groq = require('./services/groqClient');
 
-for (const v of ['MONGODB_URI', 'JWT_SECRET', 'GROQ_API_KEY']) {
+for (const v of ['MONGODB_URI', 'JWT_SECRET']) {
   if (!process.env[v]) {
     console.error(`Missing ${v} in .env (see .env.example)`);
     process.exit(1);
   }
 }
+
+if (!groq.getKey()) {
+  console.error('Missing GROQ_API_KEY in .env (see .env.example)');
+  process.exit(1);
+}
+console.log(`Groq ready - models: ${groq.getModels().join(', ')}`);
 
 const app = express();
 app.use(cors());
@@ -35,7 +43,7 @@ app.use('/api/museum', require('./routes/museum'));
 app.use('/api/bosses', require('./routes/bosses'));
 app.use('/api/names', require('./routes/names'));
 
-app.get('/api/health', (req, res) => res.json({ ok: true }));
+app.get('/api/health', (req, res) => res.json({ ok: true, groq: !!groq.getKey(), models: groq.getModels() }));
 
 // Optional: serve the frontend from the same server (set STATIC_DIR in .env)
 const staticDir = process.env.STATIC_DIR || path.join(__dirname, 'public');

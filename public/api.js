@@ -3,6 +3,7 @@
 // If the frontend is served by a different origin than the backend, set API_BASE to e.g. 'http://localhost:3000'.
 (function () {
   const API_BASE = '';
+  window.GROVE_API_BASE = API_BASE; // other scripts (e.g. the boss-name Suggest) use the same server address
   const TOKEN_KEY = 'grove_token';
 
   const getToken = () => localStorage.getItem(TOKEN_KEY);

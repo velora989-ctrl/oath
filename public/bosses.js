@@ -669,17 +669,13 @@ st.textContent=`#bp .sgb{flex:none;height:30px;box-sizing:border-box;padding:0 1
 document.head.appendChild(st);
 const clean=a=>{const seen=new Set(),out=[];(Array.isArray(a)?a:[]).forEach(x=>{const s=String(x).replace(/["'.!?,:;]/g,'').replace(/\s+/g,' ').trim().slice(0,30),k=s.toLowerCase();if(s&&!seen.has(k)){seen.add(k);out.push(s)}});if(!out.length)throw new Error('No names came back, try again');return out.slice(0,3)};
 async function suggest(goal){
- /* 1) same-origin proxy (server.js keeps GROQ_API_KEY in .env) */
- try{const r=await fetch('/api/names',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal})});if(r.ok)return clean((await r.json()).names)}catch(e){}
- /* 2) direct call, the key stays in this browser only */
- let key=window.GROQ_API_KEY||localStorage.getItem('groq_api_key');
- if(!key){key=(prompt('Paste your Groq API key (it is saved only in this browser):')||'').trim();if(!key)throw new Error('A Groq API key is needed');localStorage.setItem('groq_api_key',key)}
- const r=await fetch('https://api.groq.com/openai/v1/chat/completions',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
-  body:JSON.stringify({model:window.GROQ_MODEL||'openai/gpt-oss-20b',temperature:.7,max_completion_tokens:500,reasoning_effort:'low',messages:[{role:'system',content:SYSTEM},{role:'user',content:'Goal: '+goal}]})});
- if(r.status===401){localStorage.removeItem('groq_api_key');throw new Error('Groq rejected the key, press Suggest to enter it again')}
- if(!r.ok)throw new Error('Groq error '+r.status+(r.status===404?' (model not found, check the model name)':''));
- const j=await r.json();let o;try{o=JSON.parse(String(j.choices[0].message.content||'').match(/\{[\s\S]*\}/)[0])}catch(e){throw new Error('Could not read the answer, try again')}
- return clean(o.names);
+ /* the server holds GROQ_API_KEY / GROQ_MODEL (.env); the browser never needs a key */
+ let r;
+ try{r=await fetch((window.GROVE_API_BASE||'')+'/api/names',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({goal})})}
+ catch(e){throw new Error('Could not reach the server, is it running?')}
+ const j=await r.json().catch(()=>({}));
+ if(!r.ok)throw new Error(j.error||('Suggest failed ('+r.status+')'));
+ return clean(j.names);
 }
 P.addEventListener('click',async e=>{
  const c=e.target.closest('.sgc');

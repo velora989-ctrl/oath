@@ -1,5 +1,6 @@
 const express = require('express');
 const rateLimit = require('express-rate-limit');
+const { chat, getKey } = require('../services/groqClient');
 
 const router = express.Router();
 
@@ -34,51 +35,30 @@ const clean = (a) => {
   return out.slice(0, 3);
 };
 
-async function ask(model, key, goal) {
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 20_000);
-  try {
-    const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
-      signal: controller.signal,
-      body: JSON.stringify({
-        model,
-        temperature: 0.7,
-        max_completion_tokens: 500,
-        reasoning_effort: 'low',
-        messages: [{ role: 'system', content: SYSTEM }, { role: 'user', content: `Goal: ${goal}` }],
-      }),
-    });
-    if (!res.ok) {
-      const err = new Error(`Groq HTTP ${res.status} (${model})`);
-      err.status = res.status;
-      throw err;
-    }
-    const data = await res.json();
-    const m = String(data.choices?.[0]?.message?.content || '').match(/\{[\s\S]*\}/);
-    return clean(JSON.parse(m[0]).names);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-
 // POST /api/names { goal } -> { names: [3 names] }
 router.post('/', async (req, res) => {
   const goal = String((req.body && req.body.goal) || '').replace(/[\u0000-\u001f]/g, ' ').trim().slice(0, 300);
   if (!goal) return res.status(400).json({ error: 'Write the goal first' });
-  const key = process.env.GROQ_API_KEY;
-  if (!key) return res.status(503).json({ error: 'No Groq key on the server' });
-  const models = (process.env.GROQ_MODEL || 'openai/gpt-oss-20b').split(',').map((m) => m.trim()).filter(Boolean);
-  for (const model of models) {
-    try {
-      const names = await ask(model, key, goal);
-      if (names.length) return res.json({ names });
-    } catch (err) {
-      if (err.status && err.status !== 404 && err.status !== 400) break; // only a missing model moves on to the next one
-    }
+  if (!getKey()) return res.status(503).json({ error: 'No GROQ_API_KEY on the server (.env)' });
+  try {
+    const text = await chat({
+      system: SYSTEM,
+      user: `Goal: ${goal}`,
+      temperature: 0.7,
+      maxTokens: 1000,         // gpt-oss "thinks" first; 500 could be used up before any name is written
+      reasoningEffort: 'low',
+      timeoutMs: 20_000,
+    });
+    const m = text.match(/\{[\s\S]*\}/);
+    const names = m ? clean(JSON.parse(m[0]).names) : [];
+    if (names.length) return res.json({ names });
+    console.error('Names: Groq answered but no names could be read:', text.slice(0, 200));
+    return res.status(502).json({ error: 'No names came back, try again' });
+  } catch (err) {
+    console.error('Names error:', err.message);
+    const known = err.status === 401 || err.status === 403 || err.status === 429 || err.status === 0;
+    return res.status(502).json({ error: known ? err.message : 'No names came back, try again' });
   }
-  res.status(502).json({ error: 'No names came back, try again' });
 });
 
 module.exports = router;
