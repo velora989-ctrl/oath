@@ -178,6 +178,15 @@ Opening the site first shows the Oath cover picture (`title.jpg`) with "Press An
 - The game goes **full screen** on that first press (browsers only allow it from a key press, click or tap, so it cannot happen earlier). Esc leaves full screen; the Fullscreen button toggles it again. After a reload (e.g. logging out) the first click or key brings it back.
 - After "Log out" the page reloads straight to the login menu (no start screen); everywhere else it shows every time. To change the picture, replace `public/title.jpg` (16:9).
 
+## Holidays tab (the old "Undo" button)
+The button at the bottom right now says **Holidays** and opens the school calendar (`public/calendar.js`, `calendar.css`, data in `calendar-data.js`).
+- It opens on **November 2026** and covers the school planner from **July 2026 to March 2027** (month tabs on top, arrows, Left / Right keys, a **Today** button).
+- **Holidays are green** (flag icon). Sundays, the weekly off, are pale green. A gold dot means something is on at school that day. The occasion is **not** printed on the day: click a day and the Day Book on the right opens with what the holiday is for (and the school events).
+- In the Day Book you can **make a working day a holiday** (with an optional "what is it for?"), **make a holiday or Sunday a working day**, or put a day back as the planner has it. Your own days show a star (holiday) or a W (working) and a dashed edge.
+- Planner data (holidays, events, house on duty, themes, notes) was copied from `JULY-MARCH_PLANNER.pdf` into `calendar-data.js`. To change the school year, edit that file (`hol(...)`, `holRange(...)`, `ev(...)`, `MONTHS`). Public holidays for 2027 are marked in the planner as "subject to change as per the State Government notification".
+- Saving: your changes go to `localStorage` at once and to the server a moment later: `GET /api/calendar` and `PUT /api/calendar { days: [{ d: 'YYYY-MM-DD', h: 1|0, n }] }` (own data only, `models/CalendarPref.js`, `routes/calendar.js`). `api.js` has `getCalendar` / `saveCalendar`.
+- Wiring: `index.html` loads `calendar.css`, `calendar-data.js`, `calendar.js`; `act('u')` calls `window.openCalendar()`; the label text is `["Holidays", ...]` in the panel texts (same patches are in `tools/build_frontend.py`). The old undo-the-last-move code is still there as a fallback if `calendar.js` fails to load.
+
 ## Notice board (Reminders tab)
 The **Reminders** tab (2nd tab under the stage) opens the notice board of the player whose card is selected (yours by default). `public/board.js` + `board.css`, art in `public/ui/`.
 - **Everybody can look, only the owner can change.** Other players see the board read-only (no handles, no typing, no Edit button); the server enforces it too (`PUT /api/board` always writes your own board).
@@ -191,3 +200,55 @@ The **Reminders** tab (2nd tab under the stage) opens the notice board of the pl
 - **Several boards**: tabs above the wood (up to 12 per player). In edit mode: New board, click the open tab to rename, trash to delete (needs a second click; the last board cannot be deleted). The last-opened board is remembered. Visitors can switch between your boards but not change them.
 - **Saving**: `localStorage` per board at once, server a moment later. API: `GET /api/board/list/:playerId` (public), `GET /api/board/b/:id` (public), `POST /api/board/b {name}`, `PUT /api/board/b/:id {papers?, name?}` (owner only), `DELETE /api/board/b/:id`, plus `POST /api/board/images` / `GET /api/board/images/:id`. Max 60 items per board; pictures nobody uses any more are deleted after a day. An old single board becomes "My board"; server.js drops the old unique `player_1` index on start.
 - **Wiring**: `server.js` mounts `/api/board` (2 MB body limit); `api.js` has `getBoards`, `getBoard`, `createBoard`, `saveBoard`, `renameBoard`, `deleteBoard`, `uploadBoardImage`; `index.html` loads `board.css`, `vintage.js`, `board.js` (also in `tools/build_frontend.py`).
+
+## Creators Museum (the Patch panel, bottom left)
+
+Click the Patch panel (it looks exactly as before) to open the museum: a gallery of creators you want to study.
+
+- **Add creator**: a name, a hall (Self-help, Business or Productivity) and an optional "what I want to learn" note. You can also paste a first link.
+- **Add videos**: paste a YouTube video or playlist link, or drag a video (or its link) from the YouTube website onto the page. A playlist link brings the whole playlist in; videos keep their playlist as a filter chip.
+- **Watch**: YouTube-style grid with thumbnails, titles and lengths; the watch page has the player, an "Up next" list with autoplay, and **timestamps**. Chapters from the video description are imported when `YOUTUBE_API_KEY` is set; you can always add your own ("Use now" grabs the current time). Click a time to jump.
+- Saved per player (localStorage immediately, server shortly after) via `GET/PUT /api/museum`.
+
+Optional `.env`: `YOUTUBE_API_KEY` (YouTube Data API v3) gives exact durations, chapters and reliable playlist reading. Without it, titles come from YouTube's oEmbed and playlists are read through YouTube's own player. Redeploy the server so the new `/api/museum` route is live.
+
+### Museum map
+
+Opening the Patch panel shows a wide painted map (`public/museum/map.jpg`, 27 stops). Hold the left mouse button and drag to move around (the mouse wheel and the left/right arrow keys work too; movement is smoothed). Each stop is a ring frame (`frame.png`): empty stops show a "?" (`unknown.png`) and "Add"; click one to add a creator with a profile picture (any image, cropped square and shrunk to about 240 px). Click a portrait to open that creator's videos, playlists and timestamps. Each creator's picture and place are saved with the museum (`img`, `slot`).
+
+## World Map (`public/worldmap.js`, `worldmap.css`, `public/map/`)
+A big picture you drag around in every direction. Open it with the small map button next to the sound button (bottom right of the game).
+- **Move:** drag with the mouse or a finger, or W A S D / arrow keys. **Zoom:** mouse wheel, pinch, double-click, the + / - buttons, or the + / - keys. **0 / Home** (or the house button) goes back to the start view. **Esc** or Back closes it.
+- **Limit:** the view stops exactly at the edge of the picture (soft bounce), so empty space never shows, whatever the zoom or window size.
+- **Opening size:** the same size as the Creators Museum map, a little zoomed out (`OPEN_ZOOM = 0.85` at the top of `worldmap.js`). It remembers where you left off. While it is open, the game's letter shortcuts are switched off.
+- **Fast and sharp:** the picture is cut into 512 px tiles at 4 sizes (`public/map/`). Only the tiles on screen are loaded; the small ones are fetched while the start screen shows, so it opens at once.
+- **Change the picture:** `python3 tools/make_map_tiles.py path/to/new-map.png` (needs `pip install pillow`) rewrites `public/map/`. Any size works; the page reads it from `map/meta.json`. A sharper picture needs no code change.
+- **How the current map was made:** the overview plus 7 close-ups (about 6x detail) and the wide middle strip (about 12x detail) were matched to each other automatically (`tools/map_build/`, OpenCV; paths inside are the ones used on the author's machine), blended into one 15360 x 8552 picture, and cut into tiles with `make_map_tiles.py`. The middle strip is used wherever it is sharper than the pictures under it. Maximum zoom is `MAX_ZOOM = 1.2` in `worldmap.js`.
+- **Known weak spots:** a thin band on the right side (between the top and bottom close-ups, about 3900 x 350 px) is not covered by any close-up and comes from the overview, so it is softer. Where the middle strip meets the other pictures the painting style changes slightly. A close-up of that band, or re-exporting all pieces in one consistent style, fixes both.
+
+## Patch button = level map
+
+The "Patch" panel (bottom-left) now opens the **world map** in level mode (same drag / zoom / WASD as the map button, which stays plain).
+- The 27 circular level frames sit on the map at the same places and size as on the Creators Museum map (`public/museum-trail.js` holds the placement of that picture inside the world map, the level order and every stone path).
+- Click a frame to open that creator's videos (empty frame = add a creator). Esc / Back returns to the map.
+- Tick videos as watched. When a level is completed, every stone path leaving it glows; a level that joins two others lights both paths (levels 1, 2, 5, 15 and 19 do). Partial progress lights the stones one by one.
+- Each creator page keeps its Videos and Books tabs. Videos store `done`; only videos count toward level progress (books do not).
+
+## New museum UI
+Creator pages, the Videos and Books tabs and the Add / Edit a Creator dialog use the new image-based look (`public/museum/ui/`). Edit a Creator has a **Remove** button that switches on remove mode for videos and books (a red ✕ on every card until you press Done). Videos open on YouTube; tick the small check on a video card to mark it watched (that lights the paths on the level map).
+
+## Button layout
+- The map button next to Sound is gone. The Patch panel (bottom-left) no longer does anything.
+- **Bosses** (the old Fullscreen button, bottom-right) now opens the level map page that Patch used to open.
+- **Holidays** shows a calendar icon.
+- A new **Fullscreen** button (with three green dots) sits under Log out. Fullscreen no longer starts by itself on computers, only on phones.
+
+## Level unlocking
+Only 3 levels are open at a time, in map order. Every finished level (all its videos ticked) opens the next one. Locked circles are grey with a lock and cannot get a creator yet; creators already on a level stay reachable.
+
+## Instagram reels, exam days, glow
+- **Reels:** paste or drag an Instagram reel link into a creator's Videos tab. YouTube videos show in a table on top and reels in their own section below, shown as just the reel's picture (no label, no username, no title from Instagram). Double-click the empty space under a reel to type a title; double-click its picture to choose another picture. The server reads the picture from the public page when Instagram allows it.
+- **Calendar:** any day can be marked as a red **exam day** (study only). Saturdays and Sundays (the weekly off) use the same green as holidays.
+- **Level glow:** lit pebbles are the real map pebbles with a yellow halo and thin gold edge (nothing drawn over them).
+
+- **Bosses map:** hovering a circle shows only the creator's name and videos watched (for example `Name · 7/9`). A finished level has no green plate.

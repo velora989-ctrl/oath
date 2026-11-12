@@ -1,0 +1,160 @@
+/* ===== Holidays tab: the school calendar on the wooden notice board (shares the look of board.css) ===== */
+#cal{position:fixed;inset:0;z-index:112;display:none;background:#070d07;overflow:hidden;overflow:clip;font-family:'IM Fell English','EB Garamond',Georgia,serif;color:#2b1b0e;-webkit-user-select:none;user-select:none}
+#cal.open{display:block;animation:gbIn .38s ease-out both}
+#cal .cal-blur{position:absolute;inset:-6%;background:url(ui/board.png) center/cover no-repeat;filter:blur(22px) brightness(.55) saturate(1.1)}
+#cal-stage{position:absolute;left:50%;top:50%;width:1671px;height:941px;margin:-470.5px 0 0 -835.5px;transform:scale(var(--s,1));transform-origin:50% 50%;overflow:hidden;overflow:clip;box-shadow:0 0 60px rgba(0,0,0,.6)}
+#cal-stage>img.cal-bg{position:absolute;left:0;top:0;width:1671px;height:941px;display:block;pointer-events:none;-webkit-user-drag:none}
+#cal button{font-family:inherit}
+
+/* top: back, where you are, today */
+#cal-back{position:absolute;left:26px;top:24px;height:46px;padding:0 20px 0 14px;display:flex;align-items:center;gap:10px;font:700 15px 'Cinzel','IM Fell English SC',serif;letter-spacing:.06em;color:#f3e1b4;cursor:pointer;border:2px solid #20120a;border-radius:9px;background:linear-gradient(180deg,#6a4426,#43280f);box-shadow:inset 0 1px 0 rgba(255,220,150,.28),0 4px 8px rgba(0,0,0,.55);text-shadow:0 1px 1px #000;transition:filter .15s,transform .15s}
+#cal-back:hover{filter:brightness(1.18);transform:translateY(-1px)}
+#cal-back svg{width:20px;height:20px;fill:none;stroke:#f3e1b4;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
+#cal-back kbd{font:700 10px 'Cinzel',serif;border:1px solid rgba(243,225,180,.5);border-radius:4px;padding:2px 5px;opacity:.7;margin-left:4px}
+#cal-status{position:absolute;left:292px;top:34px;height:26px;display:flex;align-items:center;gap:8px;max-width:780px}
+#cal-status span{height:26px;display:flex;align-items:center;padding:0 14px;color:#ffe7ae;background:rgba(20,12,6,.66);border-radius:13px;text-shadow:0 1px 1px #000;font:700 13px 'Cinzel',serif;letter-spacing:.07em;white-space:nowrap}
+#cal-status .sa{font:italic 15px 'IM Fell English',serif;letter-spacing:0;color:#b9ee9a}
+#cal-status span:empty{display:none}
+#cal-today{position:absolute;right:30px;top:20px;height:54px;padding:0 24px 0 18px;display:flex;align-items:center;gap:11px;font:700 18px 'Cinzel','IM Fell English SC',serif;letter-spacing:.05em;color:#3a2412;cursor:pointer;border:2.5px solid #2a1708;border-radius:12px;background:linear-gradient(180deg,#ffe9a8,#f0c25c 55%,#d79d36);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.7),0 4px 0 #2a1708,0 8px 14px rgba(0,0,0,.55);transition:transform .12s,filter .15s}
+#cal-today svg{width:26px;height:26px;fill:none;stroke:#3a2412;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+#cal-today:hover{filter:brightness(1.08);transform:translateY(-1px)}
+#cal-today:active{transform:translateY(3px)}
+#cal-today.off{opacity:.45;pointer-events:none;filter:grayscale(.5)}
+
+/* month tabs above the wood */
+#cal-months{position:absolute;left:238px;top:140px;width:1022px;height:42px;display:flex;align-items:flex-end;gap:5px}
+#cal-months .mp{position:relative;height:34px;min-width:84px;display:flex;align-items:baseline;justify-content:center;gap:5px;padding:0 14px;border:2px solid #1f1209;border-bottom:0;border-radius:9px 9px 0 0;background:linear-gradient(180deg,#8a5e33,#5e3d1d);color:#f3e1b4;font:700 15px 'Cinzel','IM Fell English SC',serif;letter-spacing:.05em;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,220,150,.3);align-items:center}
+#cal-months .mp small{font:400 11px 'Cinzel',serif;opacity:.65}
+#cal-months .mp:hover{filter:brightness(1.18)}
+#cal-months .mp.on{height:42px;background:linear-gradient(180deg,#f2e3ba,#dcc690);color:#3a2412;cursor:default}
+#cal-months .mp.on small{opacity:.7}
+
+/* the parchment month sheet */
+#cal-sheet{position:absolute;left:258px;top:246px;width:982px;height:500px}
+#cal .paper{cursor:default;touch-action:auto}
+#cal .cs-head{position:absolute;left:40px;right:40px;top:20px;height:58px;display:flex;align-items:center;justify-content:space-between;z-index:3}
+#cal .cs-head .ttl{text-align:center;line-height:1}
+#cal .cs-head h2{margin:0;font:700 31px 'Cinzel','IM Fell English SC',serif;letter-spacing:.1em;color:#3a2412;text-shadow:0 1px 0 rgba(255,244,205,.7)}
+#cal .cs-head h2 span{font-weight:400;color:#7a4a1c}
+#cal .cs-head p{margin:5px 0 0;font:italic 17px 'IM Fell English',serif;color:#5a3a1c}
+#cal .nv{width:44px;height:44px;border-radius:50%;border:2px solid #2a1708;background:linear-gradient(180deg,#ffe9a8,#f0c25c 55%,#d79d36);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 3px 0 #2a1708,0 5px 8px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0;transition:transform .1s,filter .15s}
+#cal .nv svg{width:22px;height:22px;fill:none;stroke:#3a2412;stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+#cal .nv:hover{filter:brightness(1.08)}#cal .nv:active{transform:translateY(2px)}
+#cal .nv:disabled{opacity:.35;pointer-events:none;filter:grayscale(.6)}
+#cal .cs-wd{position:absolute;left:36px;right:36px;top:86px;height:24px;display:grid;grid-template-columns:repeat(7,1fr);gap:5px;z-index:3}
+#cal .cs-wd span{text-align:center;font:700 13px 'Cinzel',serif;letter-spacing:.14em;color:#6b4220;line-height:24px;border-bottom:1.5px solid rgba(90,55,20,.4)}
+#cal .cs-wd span.sn{color:#8d2f22}
+#cal .cs-grid{position:absolute;left:36px;right:36px;top:114px;bottom:30px;display:grid;grid-template-columns:repeat(7,1fr);grid-template-rows:repeat(var(--rows,5),1fr);gap:5px;z-index:3}
+#cal .cd{position:relative;display:block;padding:0;min-width:0;min-height:0;border:1.5px solid rgba(90,55,20,.5);border-radius:6px;background:linear-gradient(180deg,rgba(255,250,232,.55),rgba(240,222,176,.4));box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 1px 1px rgba(60,30,8,.25);cursor:pointer;text-align:left;color:#3a2412;transition:transform .12s,box-shadow .15s,filter .15s}
+#cal .cd.out{border:0;background:none;box-shadow:none;pointer-events:none}
+#cal .cd:hover{transform:translateY(-2px);filter:brightness(1.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 5px 8px rgba(60,30,8,.35)}
+#cal .cd .n{position:absolute;left:9px;top:5px;font:700 21px 'Cinzel',serif;line-height:1}
+#cal .cd .ic{position:absolute;right:8px;bottom:6px;width:22px;height:22px}
+#cal .cd .ic svg{width:100%;height:100%;fill:none;stroke:#0f3a0b;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+#cal .cd.holiday{border-color:#2c6a22;background:linear-gradient(180deg,#c3f2a3,#7fcb63 58%,#58a642);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.65),0 2px 0 #245a1b,0 3px 5px rgba(20,60,10,.4);color:#0f3a0b}
+#cal .cd.holiday .n{text-shadow:0 1px 0 rgba(255,255,255,.55)}
+#cal .cd.holiday .ic svg{fill:rgba(255,255,255,.55)}
+#cal .cd.holiday.mine{background:linear-gradient(180deg,#b6f0cf,#63c795 58%,#3f9d73);border-style:dashed;border-color:#17663f}
+#cal .cd.holiday.mine .ic svg{fill:#ffe38a;stroke:#6a4a08}
+#cal .cd.off{border-color:#2c6a22;background:linear-gradient(180deg,#c3f2a3,#7fcb63 58%,#58a642);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.65),0 2px 0 #245a1b,0 3px 5px rgba(20,60,10,.4);color:#0f3a0b}
+#cal .cd.off .n{text-shadow:0 1px 0 rgba(255,255,255,.55)}
+#cal .cd.working.mine{border-style:dashed;border-color:#8a5a14}
+#cal .cd .wk{position:absolute;right:7px;bottom:6px;width:20px;height:20px;border-radius:50%;background:#6a4a1a;color:#ffe9a8;font:700 11px/20px 'Cinzel',serif;text-align:center}
+#cal .cd .dot{position:absolute;left:10px;bottom:8px;width:9px;height:9px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#d19321 65%,#8a5b0c);box-shadow:0 1px 1px rgba(0,0,0,.4)}
+#cal .cd.today{box-shadow:0 0 0 3px #e0a63c,0 0 14px 3px rgba(224,166,60,.8),inset 0 1px 0 rgba(255,255,255,.55)}
+#cal .cd.sel{transform:translateY(-3px) scale(1.04);z-index:5;outline:3px solid #2a1708;outline-offset:1px;box-shadow:0 8px 14px rgba(40,20,5,.55),inset 0 1px 0 rgba(255,255,255,.6)}
+#cal .cd:focus-visible,#cal .mp:focus-visible,#cal .nv:focus-visible{outline:3px solid #e0a63c;outline-offset:2px}
+
+/* the day book (right) */
+#cal-side{position:absolute;left:1346px;top:122px;width:296px;height:656px;overflow:hidden;overflow:clip;background:#2a190d url(ui/tray_wood.jpg) center top/296px 760px;box-shadow:inset 0 0 22px 6px rgba(0,0,0,.65),inset 0 0 0 2px rgba(0,0,0,.35)}
+#cal-side .th{position:absolute;left:0;right:0;top:9px;text-align:center;font:700 12px 'Cinzel','IM Fell English SC',serif;letter-spacing:.32em;color:rgba(236,205,140,.85);text-shadow:0 1px 1px #000;pointer-events:none}
+#cal .sp-in{position:absolute;left:0;top:0;right:0;bottom:0;padding:30px 24px 22px;overflow-y:auto;overflow-x:hidden;scrollbar-width:thin;scrollbar-color:#8a5b2a transparent;z-index:3;-webkit-user-select:text;user-select:text}
+#cal .sp h3{margin:0 0 12px;font:700 19px 'Cinzel',serif;letter-spacing:.06em;color:#3a2412;text-align:center}
+#cal .sp h4{margin:0 0 3px;font:700 11.5px 'Cinzel',serif;letter-spacing:.18em;color:#7a4a1c;text-transform:uppercase}
+#cal .sp p,#cal .sp li{margin:0;font:400 16px/1.25 'IM Fell English','EB Garamond',serif;color:#33200f}
+#cal .sp ul{margin:0;padding:0 0 0 17px}#cal .sp li{margin:3px 0}
+#cal .sp .cnt{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin-bottom:8px}
+#cal .sp .cnt div{border:1.5px solid rgba(90,55,20,.5);border-radius:7px;text-align:center;padding:7px 2px 6px;background:rgba(255,250,232,.4)}
+#cal .sp .cnt b{display:block;font:700 30px/1 'Cinzel',serif}
+#cal .sp .cnt span{font:italic 14px 'IM Fell English',serif;color:#5a3a1c}
+#cal .sp .cnt .c1{background:linear-gradient(180deg,#c3f2a3,#7fcb63);border-color:#2c6a22}#cal .sp .cnt .c1 b{color:#0f3a0b}
+#cal .sp .cnt .c3{background:linear-gradient(180deg,#c3f2a3,#7fcb63);border-color:#2c6a22}#cal .sp .cnt .c3 b{color:#0f3a0b}
+#cal .sp .hint{text-align:center;font-style:italic;color:#5a3a1c;margin:2px 0 10px}
+#cal .sp .nx{margin:0 0 12px;text-align:center}
+#cal .sp .nx span{display:block;font:700 11px 'Cinzel',serif;letter-spacing:.18em;color:#7a4a1c;margin-bottom:4px;text-transform:uppercase}
+#cal .sp .nx button{border:1.5px solid #2c6a22;border-radius:18px;background:linear-gradient(180deg,#c3f2a3,#7fcb63 58%,#58a642);color:#0f3a0b;font:400 15px 'IM Fell English',serif;padding:5px 16px;cursor:pointer;box-shadow:0 2px 0 #245a1b}
+#cal .sp .nx button:hover{filter:brightness(1.07)}
+#cal .sp .nx b{font:700 14px 'Cinzel',serif}
+#cal .sp .key,#cal .sp .mt{margin:0 0 11px;padding-top:9px;border-top:1.5px solid rgba(90,55,20,.3)}
+#cal .sp .key p{display:flex;align-items:center;gap:9px;margin:4px 0;font-size:15px}
+#cal .sp .k{flex:none;width:22px;height:16px;border-radius:4px;border:1.5px solid rgba(90,55,20,.55);background:rgba(255,250,232,.6);position:relative}
+#cal .sp .k.hol{background:linear-gradient(180deg,#c3f2a3,#58a642);border-color:#2c6a22}
+#cal .sp .k.off{background:linear-gradient(180deg,#c3f2a3,#58a642);border-color:#2c6a22}
+#cal .sp .k.mine{background:linear-gradient(180deg,#b6f0cf,#3f9d73);border:1.5px dashed #17663f}
+#cal .sp .k.ev{background:none;border:0;width:22px}#cal .sp .k.ev::after{content:"";position:absolute;left:6px;top:3px;width:10px;height:10px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffe9a0,#d19321 65%,#8a5b0c)}
+#cal .sp .k.tod{box-shadow:0 0 0 2px #e0a63c}
+#cal .sp .mt em{font-size:14px;color:#5a3a1c}
+/* a day opened */
+#cal .sp .x{position:absolute;right:10px;top:26px;width:30px;height:30px;border-radius:50%;border:1.5px solid #2a1708;background:linear-gradient(180deg,#f2e3ba,#d3b97f);color:#3a2412;font:700 20px/1 sans-serif;cursor:pointer;padding:0;z-index:4}
+#cal .sp .x:hover{filter:brightness(1.1)}
+#cal .sp .dh{text-align:center;margin:2px 0 8px}
+#cal .sp .dh .wd{font:700 15px 'Cinzel',serif;letter-spacing:.2em;color:#7a4a1c;text-transform:uppercase}
+#cal .sp .dh .bn{font:700 70px/1 'Cinzel',serif;color:#3a2412;text-shadow:0 2px 0 rgba(255,244,205,.7)}
+#cal .sp .dh .my{font:italic 17px 'IM Fell English',serif;color:#5a3a1c}
+#cal .sp .chip{text-align:center;margin:0 auto 12px;width:fit-content;padding:5px 18px;border-radius:20px;border:2px solid #2a1708;font:700 14px 'Cinzel',serif;letter-spacing:.14em;background:linear-gradient(180deg,#f2e3ba,#d3b97f);color:#3a2412}
+#cal .sp .chip small{font:italic 400 13px 'IM Fell English',serif;letter-spacing:0}
+#cal .sp .chip.holiday{background:linear-gradient(180deg,#c3f2a3,#7fcb63 58%,#58a642);border-color:#245a1b;color:#0f3a0b;box-shadow:0 2px 0 #245a1b}
+#cal .sp .chip.off{background:linear-gradient(180deg,#c3f2a3,#7fcb63 58%,#58a642);border-color:#245a1b;color:#0f3a0b;box-shadow:0 2px 0 #245a1b}
+#cal .sp .box{margin:0 0 10px;padding:9px 11px 10px;border-radius:7px;border:1.5px solid rgba(90,55,20,.4);background:rgba(255,250,232,.42)}
+#cal .sp .box.occ{border-color:#2c6a22;background:linear-gradient(180deg,rgba(195,242,163,.75),rgba(150,210,120,.6))}
+#cal .sp .box.occ p{font:700 19px/1.2 'IM Fell English SC','IM Fell English',serif;color:#0f3a0b;letter-spacing:.02em}
+#cal .sp .act{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+#cal .sp .lb{font:700 12px 'Cinzel',serif;letter-spacing:.1em;color:#5a3a1c}#cal .sp .lb small{font:italic 400 13px 'IM Fell English',serif;letter-spacing:0}
+#cal .sp .why{width:100%;box-sizing:border-box;height:36px;padding:0 10px;border:1.5px solid #5a3a1c;border-radius:6px;background:rgba(255,252,238,.9);font:400 17px 'IM Fell English',serif;color:#2b1b0e;outline:none}
+#cal .sp .why:focus{border-color:#2c6a22;box-shadow:0 0 0 3px rgba(116,194,90,.5)}
+#cal .sp .cbtn{height:44px;display:flex;align-items:center;justify-content:center;gap:9px;border:2px solid #2a1708;border-radius:9px;background:linear-gradient(180deg,#f2e3ba,#dcc690 60%,#cdb47c);color:#3a2412;font:700 15px 'Cinzel',serif;letter-spacing:.04em;cursor:pointer;box-shadow:0 3px 0 #2a1708,inset 0 1px 0 rgba(255,255,255,.6);transition:transform .1s,filter .15s}
+#cal .sp .cbtn svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+#cal .sp .cbtn:hover{filter:brightness(1.07)}#cal .sp .cbtn:active{transform:translateY(2px);box-shadow:0 1px 0 #2a1708}
+#cal .sp .cbtn.go{background:linear-gradient(180deg,#b9ee9a,#74c25a 55%,#48993a);border-color:#173f0f;color:#12300c;box-shadow:0 3px 0 #173f0f,inset 0 1px 0 rgba(255,255,255,.6)}
+#cal .sp .lnk{border:0;background:none;color:#6a3a14;text-decoration:underline;font:italic 15px 'IM Fell English',serif;cursor:pointer;padding:2px;text-align:center}
+#cal [data-tip]:hover::after{content:attr(data-tip);position:absolute;right:0;top:calc(100% + 10px);width:max-content;max-width:230px;padding:6px 10px;font:400 15px/1.25 'IM Fell English',serif;color:#f6e7bd;background:#1f1209;border:1px solid #6a4426;border-radius:6px;z-index:9;pointer-events:none;text-align:left}
+@media (prefers-reduced-motion:reduce){#cal .cd,#cal-today{transition:none}#cal.open{animation:none}}
+
+/* ===== exam days: red (study only) ===== */
+#cal .cd.exam{border-color:#7d1d17;background:linear-gradient(180deg,#ffc1b6,#ee6a5a 58%,#c63a2d);box-shadow:inset 0 1.5px 0 rgba(255,255,255,.6),0 2px 0 #66140f,0 3px 5px rgba(80,15,10,.4);color:#4a0a05}
+#cal .cd.exam .n{text-shadow:0 1px 0 rgba(255,255,255,.5)}
+#cal .cd.exam .ic svg{stroke:#4a0a05;fill:rgba(255,255,255,.5)}
+#cal .cd.exam.mine{border-style:dashed}
+#cal .sp .k.exam{background:linear-gradient(180deg,#ffc1b6,#c63a2d);border-color:#7d1d17}
+#cal .sp .chip.exam{background:linear-gradient(180deg,#ffc1b6,#ee6a5a 58%,#c63a2d);border-color:#66140f;color:#4a0a05;box-shadow:0 2px 0 #66140f}
+#cal .sp .box.occ.exam{border-color:#7d1d17;background:linear-gradient(180deg,rgba(255,193,182,.8),rgba(238,106,90,.55))}
+#cal .sp .box.occ.exam p{color:#4a0a05}#cal .sp .box.occ.exam small{display:block;margin-top:3px;font:italic 14px 'IM Fell English',serif;color:#5a1510}
+#cal .sp .cbtn.exam{background:linear-gradient(180deg,#ffb3a6,#e9604f 55%,#c13427);border-color:#4a0c07;color:#3a0804;box-shadow:0 3px 0 #4a0c07,inset 0 1px 0 rgba(255,255,255,.6)}
+#cal .sp .exn{display:flex;align-items:center;gap:8px;margin:0 0 8px;font:italic 16px 'IM Fell English',serif;color:#5a1510}#cal .sp .exn b{font:700 18px 'Cinzel',serif}
+
+/* ===== Day Book: to-dos and notes beside each day ===== */
+#cal .cd .nt{position:absolute;right:7px;top:7px;width:10px;height:13px;border-radius:2px 2px 2px 5px;background:#fffbe9;border:1.5px solid #6a3a14;box-shadow:0 1px 1px rgba(0,0,0,.3)}
+#cal .cd .nt::after{content:"";position:absolute;left:1px;right:1px;top:3px;height:1.5px;background:#6a3a14;box-shadow:0 3px 0 #6a3a14}
+#cal .sp .nb{margin-top:14px;padding-top:11px;border-top:1.5px solid rgba(90,55,20,.35)}
+#cal .sp .nb .nh{margin-top:12px}
+#cal .sp .tl{list-style:none;margin:4px 0 0;padding:0}
+#cal .sp .tl li.td{display:flex;align-items:flex-start;gap:8px;margin:4px 0}
+#cal .sp .td span{flex:1;min-width:0;overflow-wrap:anywhere;font:400 16px/1.2 'IM Fell English','EB Garamond',serif;color:#33200f;padding-top:2px}
+#cal .sp .td.done span{text-decoration:line-through;color:#7a6a52}
+#cal .sp .td .tk{flex:none;width:20px;height:20px;margin-top:1px;padding:0;border:2px solid #5a3a1c;border-radius:5px;background:rgba(255,252,238,.9);cursor:pointer;display:flex;align-items:center;justify-content:center}
+#cal .sp .td.done .tk{background:linear-gradient(180deg,#9be07c,#4b9a38);border-color:#173f0f}
+#cal .sp .td .tk svg{width:14px;height:14px;fill:none;stroke:#fff;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+#cal .sp .td .tx{flex:none;width:22px;height:22px;padding:0;border:0;border-radius:50%;background:none;color:#8d2f22;font:700 18px/1 sans-serif;cursor:pointer;opacity:.55}
+#cal .sp .td .tx:hover{opacity:1;background:rgba(141,47,34,.12)}
+#cal .sp .tnone{font:italic 15px 'IM Fell English',serif;color:#7a6a52;margin:4px 0 0}
+#cal .sp .tadd{display:flex;gap:6px;margin-top:8px}
+#cal .sp .todo-in{flex:1;min-width:0;box-sizing:border-box;height:34px;padding:0 9px;border:1.5px solid #5a3a1c;border-radius:6px;background:rgba(255,252,238,.9);font:400 16px 'IM Fell English',serif;color:#2b1b0e;outline:none}
+#cal .sp .todo-in:focus,#cal .sp .dnote:focus{border-color:#2c6a22;box-shadow:0 0 0 3px rgba(116,194,90,.5)}
+#cal .sp .tplus{flex:none;width:34px;height:34px;padding:0;border:2px solid #173f0f;border-radius:7px;background:linear-gradient(180deg,#b9ee9a,#74c25a 55%,#48993a);color:#12300c;font:700 22px/1 'Cinzel',serif;cursor:pointer;box-shadow:0 2px 0 #173f0f}
+#cal .sp .tplus:active{transform:translateY(2px);box-shadow:none}
+#cal .sp .dnote{display:block;width:100%;box-sizing:border-box;margin-top:4px;padding:7px 9px;border:1.5px solid #5a3a1c;border-radius:6px;resize:vertical;min-height:74px;max-height:200px;background:repeating-linear-gradient(180deg,rgba(255,252,238,.92) 0 21px,rgba(150,110,60,.28) 21px 22px);font:400 16px/22px 'IM Fell English',serif;color:#2b1b0e;outline:none}
+#cal .sp .mt.todos .tl.sm li{margin:3px 0}
+#cal .sp .tgo{display:block;width:100%;text-align:left;padding:4px 8px;border:1.5px solid rgba(90,55,20,.4);border-radius:6px;background:rgba(255,250,232,.55);font:400 15px/1.2 'IM Fell English',serif;color:#33200f;cursor:pointer}
+#cal .sp .tgo:hover{background:rgba(255,244,205,.9)}
+#cal .sp .tgo b{font:700 13px 'Cinzel',serif;color:#7a4a1c}
+#cal .sp .tgo small{color:#7a6a52}

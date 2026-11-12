@@ -1,0 +1,620 @@
+/* ===== Creators Museum (the Patch panel): gallery of creators + a YouTube-style video wall in the Grove's wood and parchment ===== */
+#mu{position:fixed;inset:0;z-index:114;display:none;background:#070d07;overflow:hidden;overflow:clip;font-family:'IM Fell English','EB Garamond',Georgia,serif;color:#2b1b0e;-webkit-user-select:none;user-select:none}
+#mu.open{display:block;animation:gbIn .38s ease-out both}
+#mu .mu-blur{position:absolute;inset:-6%;background:url(ui/board.png) center/cover no-repeat;filter:blur(22px) brightness(.5) saturate(1.1)}
+#mu-stage{position:absolute;left:50%;top:50%;width:1671px;height:941px;margin:-470.5px 0 0 -835.5px;transform:scale(var(--s,1));transform-origin:50% 50%;overflow:hidden;overflow:clip;box-shadow:0 0 60px rgba(0,0,0,.6);background:#2a1a0d}
+#mu .mu-wall{position:absolute;inset:-12px;background:linear-gradient(rgba(12,8,3,.6),rgba(12,8,3,.8)),url(museum/map.jpg) 40% 40%/cover;filter:blur(5px);pointer-events:none}
+#mu button,#mu input,#mu textarea{font-family:inherit}
+#mu svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* buttons */
+#mu .mu-btn{display:inline-flex;align-items:center;gap:9px;height:44px;padding:0 18px;font:700 14px 'Cinzel','IM Fell English SC',serif;letter-spacing:.05em;color:#f3e1b4;cursor:pointer;border:2px solid #20120a;border-radius:9px;background:linear-gradient(180deg,#6a4426,#43280f);box-shadow:inset 0 1px 0 rgba(255,220,150,.28),0 4px 8px rgba(0,0,0,.5);text-shadow:0 1px 1px #000;text-decoration:none;transition:filter .15s,transform .15s}
+#mu .mu-btn:hover{filter:brightness(1.18);transform:translateY(-1px)}
+#mu .mu-btn:disabled{opacity:.45;cursor:default;filter:none;transform:none}
+#mu .mu-btn.gold{color:#2a1604;background:linear-gradient(180deg,#f2cf74,#c8923a);text-shadow:0 1px 0 rgba(255,235,170,.6)}
+#mu .mu-btn.sm{height:36px;padding:0 13px;font-size:12px}
+#mu .mu-btn.big{height:54px;padding:0 28px;font-size:16px}
+#mu .mu-btn.dgr:hover,#mu .mu-btn.arm{background:linear-gradient(180deg,#b04a30,#7a2814);color:#fff}
+#mu .mu-btn kbd{font:700 10px 'Cinzel',serif;border:1px solid rgba(243,225,180,.5);border-radius:4px;padding:2px 5px;opacity:.7}
+#mu .mu-btn.back{padding-left:13px}
+
+/* top bar + halls */
+#mu-top{position:absolute;left:26px;right:26px;top:22px;height:70px;display:flex;align-items:center;justify-content:space-between;z-index:3}
+.mu-plaque{position:absolute;left:50%;top:-4px;transform:translateX(-50%);min-width:520px;text-align:center;padding:9px 40px 11px;border:3px solid #20120a;border-radius:10px;background:linear-gradient(180deg,#e9d3a1,#cfae6c);box-shadow:inset 0 0 0 3px rgba(120,80,30,.35),0 6px 14px rgba(0,0,0,.6)}
+.mu-plaque small{display:block;font:700 11px 'Cinzel',serif;letter-spacing:.5em;color:#7a4a1c}
+.mu-plaque h1{margin:0;font:700 31px 'Cinzel',serif;letter-spacing:.12em;color:#3a1f08;text-shadow:0 1px 0 rgba(255,240,200,.7)}
+.mu-plaque p{margin:2px 0 0;font:italic 15px 'IM Fell English',serif;color:#5c3a18}
+.mu-who{position:absolute;left:50%;top:0;transform:translateX(-50%);max-width:760px;display:flex;align-items:center;gap:14px;padding:8px 26px 8px 14px;border:3px solid #20120a;border-radius:10px;background:linear-gradient(180deg,#e9d3a1,#cfae6c);box-shadow:inset 0 0 0 3px rgba(120,80,30,.35),0 6px 14px rgba(0,0,0,.6)}
+.mu-who h2{margin:0;font:700 24px 'Cinzel',serif;color:#3a1f08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:560px}
+.mu-who p{margin:0;font:italic 14px 'IM Fell English',serif;color:#5c3a18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:560px}
+#mu .seal{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:50%;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--hc) 70%,#fff),var(--hc) 60%,color-mix(in srgb,var(--hc) 60%,#000));border:2px solid rgba(30,12,4,.7);box-shadow:0 2px 4px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.35);color:#fff6dc;flex:none}
+#mu .seal svg{width:24px;height:24px}
+#mu .seal.sm{width:26px;height:26px}
+#mu .seal.sm svg{width:15px;height:15px}
+#mu-halls{position:absolute;left:0;right:0;top:112px;display:flex;justify-content:center;gap:14px;z-index:2}
+#mu .ht{display:flex;align-items:center;gap:9px;height:46px;padding:0 20px;font:700 15px 'Cinzel',serif;letter-spacing:.05em;color:#e8d3a2;cursor:pointer;border:2px solid #20120a;border-radius:24px;background:linear-gradient(180deg,#4f321a,#33200f);box-shadow:0 4px 8px rgba(0,0,0,.5);transition:filter .15s}
+#mu .ht:hover{filter:brightness(1.2)}
+#mu .ht.on{color:#2a1604;background:linear-gradient(180deg,#f2cf74,#c8923a);box-shadow:0 0 0 2px rgba(255,220,130,.5),0 4px 8px rgba(0,0,0,.5)}
+#mu .ht em{font:700 12px 'Cinzel',serif;font-style:normal;min-width:22px;text-align:center;padding:2px 6px;border-radius:10px;background:rgba(0,0,0,.35);color:#f3e1b4}
+#mu .ht.on em{background:rgba(60,30,6,.35);color:#2a1604}
+#mu-status{position:absolute;right:30px;bottom:12px;font:italic 14px 'IM Fell English',serif;color:#e8d3a2;text-shadow:0 1px 2px #000;z-index:4}
+
+/* body */
+#mu-body{position:absolute;left:34px;right:34px;top:176px;bottom:30px;z-index:2;overflow:auto;overflow-x:hidden;-webkit-user-select:none;user-select:none;scrollbar-width:thin;scrollbar-color:#a8794a #2a170a}
+#mu-body.creator,#mu-body.watch{top:112px}
+#mu-body::-webkit-scrollbar{width:10px}#mu-body::-webkit-scrollbar-thumb{background:#a8794a;border-radius:6px}#mu-body::-webkit-scrollbar-track{background:#2a170a}
+
+/* lobby: framed portraits */
+.mu-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:34px 28px;padding:18px 18px 40px}
+#mu .mu-fr{position:relative;display:block;padding:0;border:0;background:none;cursor:pointer;text-align:center;transition:transform .2s}
+#mu .mu-fr:hover{transform:translateY(-6px) rotate(-.6deg)}
+#mu .mu-fr:nth-child(even):hover{transform:translateY(-6px) rotate(.6deg)}
+#mu .mu-fr .wire{display:block;height:14px;margin:0 28px -3px;border:solid #1a0e06;border-width:2px 2px 0;border-radius:50% 50% 0 0/100% 100% 0 0}
+#mu .mu-fr .mat{display:block;padding:12px;border:7px solid #4a2a12;border-radius:4px;background:linear-gradient(180deg,#e9d3a1,#cfae6c);box-shadow:0 0 0 2px #1a0e06,inset 0 0 0 2px rgba(120,80,30,.45),0 10px 18px rgba(0,0,0,.6),inset 0 0 14px rgba(110,70,20,.4)}
+#mu .mu-fr .art{position:relative;display:flex;align-items:center;justify-content:center;aspect-ratio:4/3;overflow:hidden;background:radial-gradient(circle at 50% 40%,color-mix(in srgb,var(--hc) 50%,#3a2410),#24150a);box-shadow:inset 0 0 18px rgba(0,0,0,.7)}
+#mu .mu-fr .art .pic{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;filter:sepia(.45) contrast(1.05) saturate(.85)}
+#mu .mu-fr .art .init{position:relative;font:700 64px 'Cinzel',serif;color:rgba(255,236,190,.55);text-shadow:0 2px 8px #000}
+#mu .mu-fr .art .pic~.init{display:none}
+#mu .mu-fr .seal{position:absolute;right:-8px;top:12px;width:38px;height:38px}
+#mu .mu-fr .plq{display:block;width:84%;margin:-12px auto 0;position:relative;padding:7px 8px 8px;border:2px solid #1a0e06;border-radius:5px;background:linear-gradient(180deg,#d9a84d,#a8742a);box-shadow:0 5px 8px rgba(0,0,0,.55)}
+#mu .mu-fr .plq strong{display:block;font:700 16px 'Cinzel',serif;color:#2a1604;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mu .mu-fr .plq small{display:block;font:italic 13px 'IM Fell English',serif;color:#4a2a0a}
+.mu-empty{height:100%;display:flex;align-items:center;justify-content:center}
+.emp-fr{max-width:560px;text-align:center;padding:36px 44px;border:4px solid #20120a;border-radius:10px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 4px rgba(120,80,30,.35),0 12px 28px rgba(0,0,0,.6)}
+.emp-fr b{display:block;font:700 28px 'Cinzel',serif;color:#3a1f08;margin-bottom:8px}
+.emp-fr p{font-size:19px;line-height:1.4;color:#4a2c10;margin:0 0 22px}
+
+/* creator page: add bar, chips, YouTube-style grid */
+.mu-add{display:flex;align-items:center;gap:10px;padding:8px 10px 8px 16px;margin-bottom:14px;border:3px solid #20120a;border-radius:30px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 2px rgba(120,80,30,.35),0 5px 12px rgba(0,0,0,.5)}
+.mu-add label{display:flex;color:#6a3f16}
+.mu-add input{flex:1;height:38px;border:0;background:transparent;outline:0;font:18px 'IM Fell English',serif;color:#2b1b0e;-webkit-user-select:text;user-select:text}
+.mu-add input::placeholder{color:#7a5a36;font-style:italic}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px}
+#mu .ch{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 15px;max-width:360px;font:700 13px 'Cinzel',serif;color:#e8d3a2;cursor:pointer;border:2px solid #20120a;border-radius:18px;background:linear-gradient(180deg,#4f321a,#33200f);white-space:nowrap}
+#mu .ch svg{width:16px;height:16px}
+#mu .ch.on{color:#2a1604;background:linear-gradient(180deg,#f2cf74,#c8923a)}
+#mu .ch em{font-style:normal;opacity:.7}
+.yg{display:grid;grid-template-columns:repeat(4,1fr);gap:26px 22px;padding:4px 4px 40px}
+.yc{position:relative;padding:10px 10px 12px;border:2px solid #20120a;border-radius:8px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 2px rgba(120,80,30,.3),0 6px 12px rgba(0,0,0,.5);transition:transform .15s}
+.yc:hover{transform:translateY(-3px)}
+#mu .yt{position:relative;display:block;width:100%;aspect-ratio:16/9;padding:0;border:0;border-radius:6px;overflow:hidden;cursor:pointer;background:#1a0e06}
+#mu .yt img,#mu .ut img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+#mu .plph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#4a2e18,#241408);color:#e8d3a2}
+#mu .plph svg{width:44px;height:44px}
+#mu .dur{position:absolute;right:6px;bottom:6px;padding:2px 6px;border-radius:4px;background:rgba(10,5,2,.85);color:#fff;font:700 12px 'EB Garamond',serif}
+#mu .dur.pl{left:6px;right:auto;letter-spacing:.08em;font-family:'Cinzel',serif;font-size:10px}
+#mu .nts{position:absolute;left:6px;top:6px;display:flex;align-items:center;gap:4px;padding:2px 7px 2px 5px;border-radius:4px;background:rgba(10,5,2,.85);color:#f2cf74;font:700 12px 'EB Garamond',serif}
+#mu .nts svg{width:13px;height:13px}
+#mu .yt .pp{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(10,5,2,.35);color:#fff;opacity:0;transition:opacity .15s}
+#mu .yt:hover .pp{opacity:1}
+#mu .yt .pp svg{width:46px;height:46px;filter:drop-shadow(0 2px 4px #000)}
+.ym{padding:9px 2px 0}
+.ytt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:700 16px/1.25 'EB Garamond',serif;color:#2b1708;min-height:40px}
+.yau{display:block;margin-top:3px;font:15px 'IM Fell English',serif;color:#5c3a18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yad{display:block;font:italic 13px 'IM Fell English',serif;color:#7a5a36}
+#mu .rm{position:absolute;right:16px;top:16px;min-width:30px;height:30px;padding:0 6px;display:flex;align-items:center;justify-content:center;border:2px solid #20120a;border-radius:15px;color:#f3e1b4;background:rgba(40,20,8,.9);cursor:pointer;opacity:0;transition:opacity .15s;font:700 11px 'Cinzel',serif}
+#mu .rm svg{width:14px;height:14px}
+.yc:hover .rm,#mu .rm.arm{opacity:1}
+#mu .rm.arm{background:#a8321c;color:#fff}
+.mu-drop-empty{display:flex;align-items:center;justify-content:center;min-height:360px;margin:10px 0;border:4px dashed rgba(243,225,180,.55);border-radius:14px;color:#f3e1b4;text-align:center}
+.mu-drop-empty b{display:block;font:700 26px 'Cinzel',serif;margin-bottom:8px}
+.mu-drop-empty p{max-width:520px;margin:0 auto;font-size:19px;line-height:1.45}
+
+/* watch page */
+.wv{display:grid;grid-template-columns:minmax(0,860px) 440px;justify-content:center;gap:28px;align-items:start;padding-bottom:30px}
+.pf{max-width:860px;padding:10px;border:3px solid #20120a;border-radius:8px;background:linear-gradient(180deg,#5a3a1e,#33200f);box-shadow:inset 0 0 0 2px rgba(255,220,150,.2),0 10px 22px rgba(0,0,0,.6)}
+.pw{position:relative;width:100%;aspect-ratio:16/9;background:#000;border-radius:4px;overflow:hidden}
+.pw iframe,#mu-yt{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+.wt,.ts{max-width:860px;box-sizing:border-box}
+.wt,.ts,.wsd{margin-top:14px;padding:14px 18px;border:3px solid #20120a;border-radius:8px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 2px rgba(120,80,30,.3),0 6px 14px rgba(0,0,0,.5);-webkit-user-select:text;user-select:text}
+.wt h3{margin:0 0 10px;font:700 24px/1.25 'EB Garamond',serif;color:#2b1708}
+.wr{display:flex;align-items:center;gap:12px}
+.av{display:flex;align-items:center;justify-content:center;width:42px;height:42px;border-radius:50%;background:#6a4426;color:#f3e1b4;font:700 18px 'Cinzel',serif;border:2px solid #20120a;flex:none}
+.wa{flex:1;min-width:0}.wa b{display:block;font:700 17px 'EB Garamond',serif;color:#2b1708;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.wa small{font:italic 14px 'IM Fell English',serif;color:#6a4a26}
+.th{display:flex;align-items:baseline;gap:14px;margin-bottom:10px}
+.th b{display:flex;align-items:center;gap:8px;font:700 17px 'Cinzel',serif;color:#3a1f08}
+.th small{font:italic 14px 'IM Fell English',serif;color:#6a4a26}
+.tl{display:flex;flex-direction:column;gap:2px;max-height:230px;overflow:auto}
+.tr{display:flex;align-items:center;gap:12px;padding:6px 8px;border-radius:6px}
+.tr:hover{background:rgba(120,80,30,.15)}
+.tr.on{background:rgba(70,140,60,.28)}
+#mu .tt{min-width:64px;padding:3px 8px;border:0;border-radius:5px;background:rgba(60,30,6,.8);color:#f2cf74;font:700 14px 'EB Garamond',serif;cursor:pointer}
+#mu .tt:hover{background:#6a4426}
+.tx{flex:1;font:17px 'EB Garamond',serif;color:#2b1708}
+#mu .td{border:0;background:none;color:#7a3a20;cursor:pointer;opacity:.5;display:flex}
+#mu .td:hover{opacity:1}
+#mu .td svg{width:15px;height:15px}
+.none{margin:6px 0 12px;font:italic 16px 'IM Fell English',serif;color:#6a4a26}
+.tf{display:flex;gap:8px;align-items:center;margin-bottom:10px}
+.tf input{height:36px;padding:0 10px;border:2px solid #6a4426;border-radius:6px;background:#f6e8c4;font:16px 'EB Garamond',serif;color:#2b1708;outline:0;-webkit-user-select:text;user-select:text}
+.tf input:focus{border-color:#c8923a}
+#mu-tt{width:76px;text-align:center}
+#mu-tl{flex:1;min-width:0}
+.wsd{margin-top:0;padding:12px 12px 8px}
+.wh{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;padding:0 4px}
+.wh b{font:700 17px 'Cinzel',serif;color:#3a1f08}
+#mu .sw{width:auto;height:auto;min-width:0;padding:0;border-radius:0;box-shadow:none;white-space:nowrap;flex:none;display:flex;align-items:center;gap:8px;border:0;background:none;cursor:pointer;font:700 12px 'Cinzel',serif;color:#4a2c10}
+#mu .sw .kb{text-decoration:none;display:block;position:relative;flex:none;box-sizing:border-box;width:38px;height:20px;border-radius:10px;background:#8a6b44;border:2px solid #20120a;transition:background .15s}
+#mu .sw .kb::after{content:'';position:absolute;left:2px;top:2px;width:12px;height:12px;border-radius:50%;background:#f3e1b4;transition:left .15s}
+#mu .sw.on .kb{background:#5aa33e}#mu .sw.on .kb::after{left:20px}
+.wlist{display:flex;flex-direction:column;gap:8px;max-height:560px;overflow:auto;padding-right:4px}
+#mu .ur{display:flex;gap:10px;padding:6px;border:2px solid transparent;border-radius:7px;background:none;cursor:pointer;text-align:left;color:inherit}
+#mu .ur:hover{background:rgba(120,80,30,.15)}
+#mu .ur.on{background:rgba(120,80,30,.25);border-color:#6a4426}
+#mu .ut{position:relative;flex:none;width:168px;aspect-ratio:16/9;border-radius:5px;overflow:hidden;background:#1a0e06}
+#mu .um{display:flex;flex-direction:column;gap:2px;min-width:0}
+#mu .um b{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:700 15px/1.25 'EB Garamond',serif;color:#2b1708}
+#mu .um small{font:italic 13px 'IM Fell English',serif;color:#6a4a26}
+
+/* drop overlay, modal, toast */
+#mu-drop{position:absolute;inset:0;z-index:20;display:none;align-items:center;justify-content:center;background:rgba(20,10,4,.78);border:6px dashed #f2cf74;pointer-events:none}
+#mu-drop.on{display:flex}
+#mu-drop div{text-align:center;color:#f3e1b4}
+#mu-drop b{display:block;font:700 40px 'Cinzel',serif;letter-spacing:.08em}
+#mu-drop span{font:italic 24px 'IM Fell English',serif}
+#mu-modal{position:absolute;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(10,5,2,.7)}
+#mu-modal.on{display:flex}
+.paper-card{width:640px;max-width:92%;padding:28px 34px 26px;border:4px solid #20120a;border-radius:10px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 4px rgba(120,80,30,.35),0 16px 34px rgba(0,0,0,.7);-webkit-user-select:text;user-select:text}
+.paper-card h3{margin:0 0 14px;font:700 28px 'Cinzel',serif;color:#3a1f08;text-align:center}
+.fl{display:block;margin:12px 0 5px;font:700 13px 'Cinzel',serif;letter-spacing:.06em;color:#4a2a0a}
+.fl small{font:italic 14px 'IM Fell English',serif;letter-spacing:0;color:#6a4a26}
+.paper-card input,.paper-card textarea{width:100%;box-sizing:border-box;padding:9px 12px;border:2px solid #6a4426;border-radius:6px;background:#f6e8c4;font:19px 'EB Garamond',serif;color:#2b1708;outline:0;resize:none}
+.paper-card input:focus,.paper-card textarea:focus{border-color:#c8923a}
+.halls3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+#mu .hp{display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 6px;border:3px solid #6a4426;border-radius:9px;background:rgba(246,232,196,.7);cursor:pointer;font:700 14px 'Cinzel',serif;color:#3a1f08;transition:transform .15s}
+#mu .hp:hover{transform:translateY(-2px)}
+#mu .hp.on{border-color:var(--hc);background:#fff3cf;box-shadow:0 0 0 3px color-mix(in srgb,var(--hc) 45%,transparent)}
+.halls3.shake{animation:muShake .4s}
+@keyframes muShake{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.err{min-height:22px;margin-top:8px;font:italic 17px 'IM Fell English',serif;color:#9a2a12}
+.mrow{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.mb{display:flex;gap:10px}
+#mu .lnk{border:0;background:none;cursor:pointer;font:italic 16px 'IM Fell English',serif;color:#7a3a20;text-decoration:underline}
+#mu .lnk.arm{color:#b01c0c;font-weight:700}
+#mu-toast{position:absolute;left:50%;bottom:34px;transform:translate(-50%,20px);z-index:40;max-width:760px;padding:12px 26px;border:3px solid #20120a;border-radius:10px;background:linear-gradient(180deg,#ead5a5,#d2b072);font:18px 'IM Fell English',serif;color:#2b1708;box-shadow:0 8px 18px rgba(0,0,0,.6);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s}
+#mu-toast.on{opacity:1;transform:translate(-50%,0)}
+
+/* ===== the map (lobby): edge-scrolling camera, a little 3D tilt, portraits standing on the path ===== */
+#mu-body.lobby{left:0;right:0;top:0;bottom:0;overflow:hidden;z-index:1}
+#mu-halls{z-index:4}
+#mu[data-screen=lobby] #mu-status{right:auto;left:30px}
+#mu[data-screen=lobby] .mu-wall{display:none}
+.mw{position:absolute;inset:0;overflow:hidden;cursor:grab;background:#10200c}
+.mw.grab{cursor:grabbing}
+.mw-cam{position:absolute;inset:0;transform-style:preserve-3d;transform-origin:50% 50%;will-change:transform}
+.mw-world{position:absolute;left:0;top:0;transform-style:preserve-3d;will-change:transform}
+.mw-map{position:absolute;left:0;top:0;width:100%;height:100%;display:block;-webkit-user-drag:none;pointer-events:none}
+.mw-sl{position:absolute;inset:0;transform-style:preserve-3d}
+#mu .sl{position:absolute;width:0;height:0;padding:0;border:0;background:none;cursor:pointer;transform-style:preserve-3d;font:inherit;color:inherit}
+#mu .sl .tk{position:absolute;display:block;transform:translateZ(60px);animation:mwBob 3.4s ease-in-out infinite;animation-delay:var(--d,0s);transition:transform .22s,filter .22s}
+#mu .sl.full .tk{width:168px;height:181px;left:-84px;top:-78px}
+#mu .sl.empty .tk{width:92px;height:92px;left:-46px;top:-46px}
+@keyframes mwBob{50%{translate:0 -6px}}
+#mu .sl .gsh{position:absolute;left:-58px;top:44px;width:116px;height:30px;border-radius:50%;background:radial-gradient(ellipse,rgba(10,20,6,.65),rgba(10,20,6,0) 70%);transform:translateZ(2px);pointer-events:none}
+#mu .sl.empty .gsh{left:-40px;top:22px;width:80px;height:22px}
+#mu .sl.empty .tk img{width:100%;height:100%;display:block;filter:drop-shadow(0 4px 5px rgba(0,0,0,.6));opacity:.92}
+#mu .sl.empty em{position:absolute;left:50%;top:100%;transform:translate(-50%,2px);white-space:nowrap;padding:3px 10px;border-radius:10px;border:2px solid #20120a;background:linear-gradient(180deg,#ead5a5,#d2b072);font:700 11px 'Cinzel',serif;color:#3a1f08;opacity:0;transition:opacity .15s;pointer-events:none}
+#mu .sl .pt{position:absolute;left:9%;top:8.3%;width:81.7%;height:69.1%;border-radius:50%;overflow:hidden;background:radial-gradient(circle at 40% 30%,color-mix(in srgb,var(--hc) 45%,#4a2e18),#241408);display:flex;align-items:center;justify-content:center}
+#mu .sl .pt img{width:100%;height:100%;object-fit:cover;display:block}
+#mu .sl .pt b{font:700 44px 'Cinzel',serif;color:rgba(255,236,190,.8);text-shadow:0 2px 6px #000}
+#mu .sl .fr{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;filter:drop-shadow(0 5px 6px rgba(0,0,0,.55))}
+#mu .sl .nm{position:absolute;left:30%;width:40%;top:84.5%;height:13%;display:flex;align-items:center;justify-content:center;font:700 9.5px 'Cinzel',serif;color:#3a1f08;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;padding:0 2px;box-sizing:border-box}
+#mu .sl .hs{position:absolute;right:-2px;top:6px;width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,color-mix(in srgb,var(--hc) 65%,#fff),var(--hc) 65%,color-mix(in srgb,var(--hc) 55%,#000));border:2px solid rgba(30,12,4,.8);color:#fff6dc;box-shadow:0 2px 4px rgba(0,0,0,.5)}
+#mu .sl .hs svg{width:16px;height:16px}
+#mu .sl.full>em{position:absolute;left:0;top:82px;transform:translate(-50%,0) translateZ(100px);white-space:nowrap;padding:4px 12px;border-radius:10px;border:2px solid #20120a;background:linear-gradient(180deg,#ead5a5,#d2b072);font:italic 15px 'IM Fell English',serif;color:#2b1708;opacity:0;transition:opacity .15s;pointer-events:none;box-shadow:0 4px 8px rgba(0,0,0,.5)}
+#mu .sl:hover .tk{transform:translateZ(100px) scale(1.1);filter:brightness(1.12) drop-shadow(0 0 14px rgba(255,225,140,.85))}
+#mu .sl:hover em{opacity:1}
+#mu .sl:focus-visible .tk{filter:drop-shadow(0 0 12px #fff)}
+#mu .sl.dim{opacity:.35;filter:grayscale(.75)}
+.mw-fx{position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(8,14,6,.78),rgba(8,14,6,0) 170px),radial-gradient(ellipse at 50% 50%,rgba(0,0,0,0) 55%,rgba(6,12,4,.55)),linear-gradient(112deg,rgba(255,245,190,.16),rgba(255,245,190,0) 38%);animation:mwSun 9s ease-in-out infinite alternate}
+@keyframes mwSun{from{opacity:.75}to{opacity:1}}
+.mw-hint{position:absolute;left:50%;bottom:26px;transform:translateX(-50%);padding:9px 20px;border:3px solid #20120a;border-radius:24px;background:linear-gradient(180deg,#ead5a5,#d2b072);font:17px 'IM Fell English',serif;color:#2b1708;box-shadow:0 6px 14px rgba(0,0,0,.55);animation:mwHint 14s forwards;pointer-events:none;white-space:nowrap}
+.mw-hint b{font:700 13px 'Cinzel',serif;letter-spacing:.08em;margin-right:8px;color:#7a4a1c}
+.mw-hint i{font:700 16px 'Cinzel',serif;font-style:normal;color:#2d6a2a}
+@keyframes mwHint{0%,80%{opacity:1}100%{opacity:0;visibility:hidden}}
+.mw-mini{position:absolute;right:24px;bottom:24px;width:300px;aspect-ratio:3840/1080;border:3px solid #20120a;border-radius:8px;overflow:hidden;z-index:5;cursor:pointer;box-shadow:0 6px 14px rgba(0,0,0,.6),0 0 0 2px rgba(243,225,180,.4);background:#10200c}
+.mw-mini img{position:absolute;inset:0;width:100%;height:100%;display:block;pointer-events:none}
+.mw-mini .dots i{position:absolute;width:7px;height:7px;margin:-3.5px 0 0 -3.5px;border-radius:50%;background:rgba(255,255,255,.4)}
+.mw-mini .dots i.on{background:var(--hc,#f2cf74);box-shadow:0 0 0 1.5px #000}
+.mw-mini .vp{position:absolute;border:2px solid #fff;box-sizing:border-box;box-shadow:0 0 0 999px rgba(0,0,0,.38);pointer-events:none}
+.mu-plaque{min-width:420px;padding:7px 34px 9px}
+.mu-plaque h1{font-size:26px}
+/* picture field in the creator card, avatar in the page header */
+.pic-row{display:flex;gap:16px;align-items:center}
+#mu .pic-prev{width:88px;height:88px;flex:none;border-radius:50%;border:3px dashed #6a4426;background:#f6e8c4;overflow:hidden;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:center;color:#6a4426}
+#mu .pic-prev.has{border-style:solid;border-color:#c8923a}
+#mu .pic-prev img{width:100%;height:100%;object-fit:cover;display:block}
+#mu .pic-prev svg{width:30px;height:30px}
+.pic-act{display:flex;flex-direction:column;align-items:flex-start;gap:6px}
+.pic-act small{font:italic 14px 'IM Fell English',serif;color:#6a4a26}
+#mu .ava{width:52px;height:52px;border-radius:50%;object-fit:cover;border:3px solid var(--hc,#6a4426);box-shadow:0 2px 5px rgba(0,0,0,.5);flex:none}
+
+/* ===== the map, simple version: one still picture, no camera, no tabs ===== */
+#mu-body.lobby{top:0;left:0;right:0;bottom:0;overflow:hidden}
+.mw{position:absolute;inset:0;overflow:hidden;cursor:default;background:#10200c}
+.mw-map{position:absolute;left:0;top:0;width:100%;height:100%;display:block;pointer-events:none}
+.mw-sl{position:absolute;inset:0}
+#mu .sl .tk{width:132px;height:142px;left:-66px;top:-61px;transform:none;animation:none;transition:transform .18s,filter .18s}
+#mu .sl.empty .tk{width:132px;height:142px;left:-66px;top:-61px}
+#mu .sl .gsh{display:none}
+#mu .sl:hover .tk{transform:scale(1.08);filter:brightness(1.1) drop-shadow(0 0 10px rgba(255,225,140,.85))}
+#mu .sl .pt{background:radial-gradient(circle at 40% 30%,#4a3a22,#241408)}
+#mu .sl.empty .pt{background:none}
+#mu .sl.empty .pt img{width:100%;height:100%;object-fit:cover;opacity:1;filter:none}
+#mu .sl .nm{font-size:8.5px}
+#mu .sl.empty .nm{color:#6a4a26}
+#mu .sl .pt b{font-size:36px}
+#mu .sl em,#mu .sl.full>em,#mu .sl.empty em{position:absolute;left:0;top:78px;transform:translateX(-50%);white-space:nowrap;padding:3px 11px;border-radius:10px;border:2px solid #20120a;background:linear-gradient(180deg,#ead5a5,#d2b072);font:italic 14px 'IM Fell English',serif;color:#2b1708;opacity:0;transition:opacity .15s;pointer-events:none;box-shadow:0 4px 8px rgba(0,0,0,.5);z-index:3}
+#mu .sl:hover em{opacity:1}
+#mu[data-screen=lobby] #mu-top{top:auto;bottom:22px;height:auto;right:auto}
+
+/* smaller rings, same size as the medallions of the picture */
+#mu .sl .tk,#mu .sl.empty .tk,#mu .sl.full .tk{width:104px;height:112px;left:-52px;top:-48px}
+#mu .sl .nm{font-size:7px}
+#mu .sl .pt b{font-size:28px}
+#mu .sl.empty .pt img{object-fit:fill}
+#mu .sl em,#mu .sl.full>em,#mu .sl.empty em{top:56px;font-size:13px}
+
+/* ===== wide map: drag to explore ===== */
+.mw{cursor:grab}
+.mw.grab{cursor:grabbing}
+.mw-world{position:absolute;left:0;top:0;will-change:transform}
+.mw-map{position:absolute;left:0;top:0;width:100%;height:100%}
+#mu .sl .tk,#mu .sl.empty .tk,#mu .sl.full .tk{width:var(--w,104px);height:calc(var(--w,104px) * 1.077);left:calc(var(--w,104px) * -.5);top:calc(var(--w,104px) * -.461)}
+#mu .sl .nm{font-size:calc(var(--w,104px) * .07)}
+#mu .sl .pt b{font-size:calc(var(--w,104px) * .27)}
+#mu .sl em,#mu .sl.full>em,#mu .sl.empty em{top:calc(var(--w,104px) * .55)}
+.mw-hint{position:absolute;left:50%;bottom:28px;transform:translateX(-50%);padding:8px 20px;border:3px solid #20120a;border-radius:22px;background:linear-gradient(180deg,#ead5a5,#d2b072);font:17px 'IM Fell English',serif;color:#2b1708;box-shadow:0 6px 14px rgba(0,0,0,.55);animation:mwHint 9s forwards;pointer-events:none;white-space:nowrap;z-index:4}
+@keyframes mwHint{0%,70%{opacity:1}100%{opacity:0;visibility:hidden}}
+
+/* ===== books: tabs on the creator page, search results and the shelf ===== */
+.mu-tabs{display:flex;gap:10px;margin-bottom:14px}
+#mu .mt{display:inline-flex;align-items:center;gap:9px;height:42px;padding:0 20px;font:700 15px 'Cinzel',serif;letter-spacing:.05em;color:#e8d3a2;cursor:pointer;border:2px solid #20120a;border-radius:21px;background:linear-gradient(180deg,#4f321a,#33200f);box-shadow:0 4px 8px rgba(0,0,0,.5);transition:filter .15s}
+#mu .mt:hover{filter:brightness(1.2)}
+#mu .mt.on{color:#2a1604;background:linear-gradient(180deg,#f2cf74,#c8923a);box-shadow:0 0 0 2px rgba(255,220,130,.5),0 4px 8px rgba(0,0,0,.5)}
+#mu .mt em{font:700 12px 'Cinzel',serif;font-style:normal;min-width:22px;text-align:center;padding:2px 6px;border-radius:10px;background:rgba(0,0,0,.35);color:#f3e1b4}
+#mu .mt.on em{background:rgba(60,30,6,.35);color:#2a1604}
+.bmsg{margin:0 0 16px;padding:14px 22px;border:2px dashed rgba(243,225,180,.55);border-radius:12px;color:#f3e1b4;font:italic 19px 'IM Fell English',serif;text-align:center}
+.bh{display:flex;align-items:baseline;justify-content:space-between;gap:16px;margin:6px 4px 12px;color:#f3e1b4}
+.bh b{display:flex;align-items:center;gap:9px;font:700 20px 'Cinzel',serif;letter-spacing:.04em;text-shadow:0 2px 4px #000}
+.bh span{font:italic 17px 'IM Fell English',serif}
+#mu .bh .lnk{color:#f2cf74}
+.bg{display:grid;grid-template-columns:repeat(6,1fr);gap:24px 20px;padding:4px 4px 34px}
+.bg.res{padding-bottom:26px;margin-bottom:10px;border-bottom:2px solid rgba(243,225,180,.25)}
+.bk{position:relative;display:flex;flex-direction:column;align-items:center;padding:14px 10px 12px;border:2px solid #20120a;border-radius:8px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 2px rgba(120,80,30,.3),0 6px 12px rgba(0,0,0,.5);transition:transform .15s}
+.bk:hover{transform:translateY(-3px)}
+.bc{position:relative;display:block;width:66%;aspect-ratio:2/3;border-radius:3px 6px 6px 3px;overflow:hidden;background:linear-gradient(135deg,#6a4426,#33200f);box-shadow:0 5px 10px rgba(0,0,0,.55),inset 3px 0 0 rgba(255,255,255,.12)}
+.bc img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.bph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:10px;text-align:center;font:700 14px/1.2 'Cinzel',serif;color:#e8d3a2;overflow:hidden}
+.bm{display:flex;flex-direction:column;align-items:center;gap:3px;width:100%;margin-top:11px;text-align:center;min-width:0}
+.bt{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;font:700 16px/1.25 'EB Garamond',serif;color:#2b1708;min-height:40px}
+.ba{max-width:100%;font:15px 'IM Fell English',serif;color:#5c3a18;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mu .bpg{display:inline-flex;align-items:center;gap:6px;margin-top:4px;padding:3px 11px;border:0;border-radius:12px;background:rgba(60,30,6,.82);color:#f2cf74;font:700 13px 'EB Garamond',serif;letter-spacing:.02em}
+#mu .bpg svg{width:14px;height:14px}
+#mu .bpg.ed{cursor:pointer}
+#mu .bpg.ed:hover{background:#6a4426}
+#mu .pgin{width:130px;height:30px;margin-top:4px;padding:0 8px;border:2px solid #c8923a;border-radius:6px;background:#f6e8c4;font:700 15px 'EB Garamond',serif;color:#2b1708;text-align:center;outline:0;-webkit-user-select:text;user-select:text}
+.bk .mu-btn.sm{margin-top:10px;max-width:100%}
+.bk:hover .rm{opacity:1}
+
+/* ==========================================================================================
+   FINAL UI (2026-11): hand-drawn PNG elements from museum/ui/. Every button, tab, bar and card
+   below is an image with live text on top. One "Videos" section per creator (no playlist tabs).
+   ========================================================================================== */
+#mu{--ink:#3a1f08;--ink2:#5c3a18;--cream:#f6ecc8}
+#mu-stage{background:#1a2a12}
+/* painted backgrounds for the creator pages */
+#mu[data-screen=creator] .mu-wall,#mu[data-screen=watch] .mu-wall{inset:0;filter:none;background:url(museum/ui/bg_videos.jpg) center/100% 100% no-repeat}
+#mu[data-screen=creator][data-tab=books] .mu-wall{background-image:url(museum/ui/bg_books.jpg)}
+
+/* image buttons */
+#mu .ab{position:relative;display:block;flex:none;padding:0;border:0;background:transparent none no-repeat center/100% 100%;cursor:pointer;color:var(--ink);font:700 16px 'Cinzel',serif;letter-spacing:.03em;transition:filter .15s,transform .15s;-webkit-tap-highlight-color:transparent;filter:drop-shadow(0 4px 5px rgba(0,0,0,.35))}
+#mu .ab:hover{filter:brightness(1.07) drop-shadow(0 6px 7px rgba(0,0,0,.4));transform:translateY(-1px)}
+#mu .ab:active{transform:translateY(1px);filter:brightness(.95) drop-shadow(0 2px 3px rgba(0,0,0,.4))}
+#mu .ab:disabled{cursor:default;filter:saturate(.6) brightness(.95);transform:none}
+#mu .ab .t{position:absolute;display:flex;align-items:center;justify-content:center;gap:7px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#mu .ab .t svg{width:16px;height:16px;stroke-width:2.6}
+
+/* top bar: Museum/ESC · creator plaque · Edit */
+#mu-top{left:28px;right:28px;top:14px;height:96px;align-items:flex-start}
+#mu .ab.esc{width:196px;height:54px;margin-top:14px;background-image:url(museum/ui/esc.png)}
+#mu .ab.esc .t{left:25%;width:44%;top:0;bottom:0;justify-content:flex-start;font-size:16px}
+#mu .ab.esc kbd{position:absolute;left:70.5%;width:21%;top:25%;height:50%;display:flex;align-items:center;justify-content:center;font:700 11px 'Cinzel',serif;letter-spacing:.06em;color:var(--ink);opacity:.85}
+#mu .ab.edit{width:128px;height:58px;margin-top:12px;background-image:url(museum/ui/edit.png)}
+#mu .ab.edit .t{left:40%;right:8%;top:0;bottom:0;font-size:17px}
+.mu-who{top:0;display:block;width:370px;height:95px;padding:0;border:0;border-radius:0;background:url(museum/ui/heading.png) center/100% 100% no-repeat;box-shadow:none;max-width:none;filter:drop-shadow(0 5px 6px rgba(0,0,0,.4))}
+.mu-who .orb{position:absolute;left:36%;top:50%;width:62px;height:62px;margin:-31px 0 0 -31px;border-radius:50%;overflow:hidden;display:flex;align-items:center;justify-content:center;background:radial-gradient(circle at 35% 30%,#8bd16a,#3f8a2c);box-shadow:0 0 0 3px #2a3a16,0 3px 6px rgba(0,0,0,.45)}
+.mu-who .orb b{font:700 28px 'Cinzel',serif;color:#f6ecc8;text-shadow:0 2px 3px rgba(0,0,0,.5)}
+#mu .ava{position:static;width:100%;height:100%;border:0;border-radius:50%;box-shadow:none}
+.mu-who .wn{position:absolute;left:48.5%;right:12%;top:0;bottom:0;display:flex;flex-direction:column;justify-content:center;min-width:0;text-align:center}
+.mu-who h2{margin:0;max-width:none;font:700 23px/1.1 'Cinzel',serif;color:var(--ink);text-shadow:0 1px 0 rgba(255,245,210,.6)}
+.mu-who p{margin:2px 0 0;max-width:none;font:italic 15px 'IM Fell English',serif;color:var(--ink2)}
+#mu-body.creator,#mu-body.watch{top:112px;left:30px;right:30px}
+
+/* Videos | Books tabs */
+.mu-tabs{display:flex;align-items:center;gap:12px;height:60px;margin:0 0 8px 8px}
+#mu .ab.tab{width:192px;height:56px;font-size:17px}
+#mu .ab.tab.on{height:60px}
+#mu .ab.vid{background-image:url(museum/ui/vid_closed.png)}
+#mu .ab.vid.on{background-image:url(museum/ui/vid_open.png)}
+#mu .ab.bk{background-image:url(museum/ui/book_closed.png)}
+#mu .ab.bk.on{background-image:url(museum/ui/book_open.png)}
+#mu .ab.tab .t{left:27%;width:40%;top:0;bottom:0;justify-content:flex-start}
+#mu .ab.tab.on .t{left:32%}
+#mu .ab.tab em{position:absolute;left:68%;width:21%;top:26%;height:48%;display:flex;align-items:center;justify-content:center;font:700 15px 'Cinzel',serif;font-style:normal;color:#f2e2b4;background:none;padding:0}
+#mu .ab.tab.on em{color:var(--ink)}
+
+/* link / search bar */
+.mu-add{position:relative;display:block;height:62px;margin:4px 6px 14px 4px;padding:0;border:0;border-radius:0;background:url(museum/ui/bar_videos.png) center/100% 100% no-repeat;box-shadow:none}
+.mu-add.books{background-image:url(museum/ui/bar_books.png)}
+.mu-add label{position:absolute;left:22px;top:0;bottom:0;display:flex;align-items:center;color:#6a3f16;opacity:.85}
+.mu-add label svg{width:22px;height:22px}
+.mu-add.books label{display:none}
+.mu-add input{position:absolute;left:62px;right:170px;top:6px;bottom:6px;width:auto;height:auto;font:italic 20px 'IM Fell English',serif;color:#2b1b0e}
+.mu-add.books input{left:66px;font-style:normal}
+.mu-add input::placeholder{color:#7a5a36;font-style:italic}
+#mu .ab.addb{position:absolute;right:8px;top:3px;width:118px;height:56px;background-image:url(museum/ui/add_btn.png);color:var(--cream)}
+#mu .ab.addb .t{inset:0;text-shadow:0 1px 2px rgba(0,0,0,.6);font-size:17px}
+#mu .ab.srch{position:absolute;right:6px;top:1px;width:156px;height:58px;background-image:url(museum/ui/search_btn.png);color:var(--cream)}
+#mu .ab.srch .t{left:36%;right:6%;top:0;bottom:0;text-shadow:0 1px 2px rgba(0,0,0,.6);font-size:17px}
+
+/* one video section: parchment cards */
+.yg{grid-template-columns:repeat(4,1fr);gap:20px 20px;padding:4px 14px 40px}
+.yc{padding:14px 21px 20px;border:0;border-radius:0;background:url(museum/ui/vid_box.png) center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(0 6px 7px rgba(0,0,0,.45));transition:transform .15s}
+.yc:hover{transform:translateY(-3px)}
+#mu .yt{border-radius:3px;box-shadow:0 0 0 2px rgba(32,18,10,.85)}
+.ym{padding:11px 2px 0}
+.ytt{font:700 16px/1.26 'EB Garamond',serif;min-height:40px;color:#2b1708}
+.yau{margin-top:5px;font:17px 'IM Fell English',serif;color:#5c3a18}
+.yad{font:italic 13px 'IM Fell English',serif;color:#7a5a36}
+#mu .rm{right:30px;top:24px}
+.mu-drop-empty{margin:10px 14px}
+
+/* books: results + shelf */
+.bh{margin:8px 8px 12px}
+.bh.res{align-items:center;margin:6px 10px 14px 6px}
+.bh .rtab{width:124px;height:46px;justify-content:center;background:url(museum/ui/results.png) center/100% 100% no-repeat;font:700 17px 'Cinzel',serif;letter-spacing:.03em;color:var(--ink);text-shadow:none}
+#mu .bh .lnk{font:italic 19px 'IM Fell English',serif;color:#fbf2d2;text-shadow:0 2px 4px #000}
+.bg{grid-template-columns:repeat(6,1fr);gap:20px 16px;padding:4px 8px 34px}
+.bg.res{border-bottom:0;margin-bottom:6px}
+.bk{padding:22px 14px 26px;border:0;border-radius:0;background:url(museum/ui/book_box.png) center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(0 6px 7px rgba(0,0,0,.45));justify-content:flex-start}
+.bk:hover{transform:translateY(-3px)}
+.bc{width:62%;border-radius:2px 4px 4px 2px}
+.bm{margin-top:12px;gap:2px}
+.bt{font:700 16px/1.25 'EB Garamond',serif;min-height:0;color:#2b1708}
+.ba{font:15px 'IM Fell English',serif}
+#mu .bpg{position:relative;display:flex;align-items:center;justify-content:center;width:100px;height:29px;margin-top:6px;padding:0;border:0;border-radius:0;background:url(museum/ui/pages.png) center/100% 100% no-repeat;color:#f2d98a;font:700 13px 'EB Garamond',serif;letter-spacing:.02em}
+#mu .bpg:hover{background-color:transparent}
+#mu .bpg.ed:hover{filter:brightness(1.2)}
+#mu .pgin{width:100px;height:29px;margin-top:6px;border-radius:14px;font-size:14px}
+#mu .ab.shelf{width:140px;height:35px;margin-top:9px;background-image:url(museum/ui/add_shelf.png);color:#27350f;font-size:11.5px;letter-spacing:.06em}
+#mu .ab.shelf .t{inset:0;text-transform:uppercase}
+#mu .ab.shelf .t svg{width:13px;height:13px}
+#mu .ab.shelf.done{filter:grayscale(.5) brightness(.9);opacity:.85}
+.bk .rm{right:18px;top:18px}
+.bmsg{margin:0 10px 16px}
+
+/* add / edit a creator card (everything is positioned on the 672x492 picture) */
+#mu .paper-card{position:relative;width:672px;max-width:none;height:492px;padding:0;border:0;border-radius:0;background:url(museum/ui/modal.png) center/100% 100% no-repeat;box-shadow:none;filter:drop-shadow(0 18px 26px rgba(0,0,0,.6))}
+#mu .paper-card h3{position:absolute;left:0;right:0;top:26px;height:50px;margin:0;display:flex;align-items:center;justify-content:center;gap:14px;font:700 36px 'Cinzel',serif;letter-spacing:.02em;color:var(--ink)}
+#mu .paper-card h3 svg{width:40px;height:40px;stroke-width:1.6;color:#4a2a12}
+#mu .paper-card .fl{position:absolute;margin:0;font:700 19px 'Cinzel',serif;letter-spacing:.02em;color:var(--ink)}
+#mu .paper-card .fl small{font:italic 16px 'IM Fell English',serif;color:var(--ink2)}
+#mu .paper-card .fl.nm{left:48px;top:90px}
+#mu .paper-card .fl.pc{left:48px;top:186px}
+#mu .namebar{position:absolute;left:42px;top:118px;width:588px;height:56px;background:url(museum/ui/name_bar.png) center/100% 100% no-repeat}
+#mu .paper-card .namebar input{position:absolute;inset:6px 18px;width:auto;height:auto;padding:0;border:0;border-radius:0;background:transparent;font:20px 'EB Garamond',serif;color:#2b1708}
+#mu .paper-card .namebar input::placeholder{color:#8d7a58}
+#mu .pic-prev{position:absolute;left:58px;top:226px;width:134px;height:132px;padding:0;border:0;border-radius:0;background:url(museum/ui/circle.png) center/100% 100% no-repeat;display:block;overflow:visible;cursor:pointer;color:#2a1a0a}
+#mu .pic-prev img{position:absolute;inset:6%;width:88%;height:88%;border-radius:50%}
+#mu .pic-prev span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center}
+#mu .pic-prev svg{width:44px;height:44px;stroke-width:2.2}
+#mu .ab.upl{position:absolute;left:222px;top:226px;width:250px;height:65px;background-image:url(museum/ui/upload.png);color:var(--cream)}
+#mu .ab.upl .t{left:30%;right:4%;top:0;bottom:0;font-size:18px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#mu .paper-card .rmpic{position:absolute;left:230px;top:298px;font:italic 19px 'IM Fell English',serif;color:#8a2a14}
+#mu .paper-card .hint{position:absolute;left:230px;top:328px;font:italic 16px/1.3 'IM Fell English',serif;color:var(--ink2)}
+#mu .paper-card .err{position:absolute;left:50px;top:174px;min-height:0;margin:0;font:italic 16px 'IM Fell English',serif;color:#9a2a12}
+#mu .paper-card .dgr{position:absolute;left:230px;top:362px;font:italic 15px 'IM Fell English',serif;color:#8a2a14}
+#mu .ab.cnl{position:absolute;left:90px;top:392px;width:218px;height:75px;background-image:url(museum/ui/cancel.png)}
+#mu .ab.cnl .t{inset:0;font-size:21px;color:#5a1f0e}
+#mu .ab.sv{position:absolute;left:326px;top:394px;width:256px;height:75px;background-image:url(museum/ui/add_museum.png);color:var(--cream)}
+#mu .ab.sv .t{left:27%;right:9%;top:0;bottom:0;font-size:16px;letter-spacing:.02em;justify-content:center;text-align:center;overflow:visible;text-overflow:clip;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+
+#mu-body.creator,#mu-body.watch{bottom:12px}
+.bh span{font:italic 19px 'IM Fell English',serif;color:#fbf2d2;text-shadow:0 0 6px #000,0 2px 3px #000}
+.bh b{text-shadow:0 0 6px #000,0 2px 3px #000}
+.bh .rtab{text-shadow:none}
+#mu .paper-card .dgr{left:58px;top:364px}
+
+/* ---- round 3: one dark background for videos and books, picture-only heading, remove-book button ---- */
+#mu[data-screen=creator] .mu-wall,#mu[data-screen=watch] .mu-wall,#mu[data-screen=creator][data-tab=books] .mu-wall{background:linear-gradient(rgba(4,10,4,.62),rgba(4,10,4,.7)),url(museum/ui/bg_books.jpg) center/100% 100% no-repeat}
+.mu-who{background-image:url(museum/ui/heading_plain.png)}
+.mu-who .orb{left:50%;width:76px;height:76px;margin:-38px 0 0 -38px;box-shadow:0 0 0 3px #2a3a16,0 0 0 5px rgba(246,236,200,.7),0 4px 8px rgba(0,0,0,.5)}
+.mu-who .orb b{font-size:34px}
+#mu .bremove{display:inline-flex;align-items:center;gap:6px;height:26px;margin-top:7px;padding:0 13px;border:2px solid #20120a;border-radius:13px;background:linear-gradient(180deg,#a8452c,#7a2814);color:#f8e8c4;font:700 11.5px 'Cinzel',serif;letter-spacing:.05em;cursor:pointer;box-shadow:0 2px 4px rgba(0,0,0,.4);transition:filter .15s}
+#mu .bremove:hover{filter:brightness(1.15)}
+#mu .bremove svg{width:13px;height:13px;stroke-width:2.4}
+#mu .bremove.arm{background:linear-gradient(180deg,#d4442a,#a01c0c);color:#fff}
+#mu .bc,#mu .bt{cursor:pointer}
+#mu .bt:hover{text-decoration:underline}
+#mu .bc:hover{filter:brightness(1.08)}
+.bk{padding-bottom:22px}
+/* the video text under each thumbnail: no "added ..." line any more */
+.ym{padding-bottom:4px}
+
+/* ---- round 4: remove mode (opened from the Edit card), orb fitted inside the heading frame ---- */
+.mu-who .orb{width:58px;height:58px;margin:-29px 0 0 -29px;box-shadow:0 0 0 2px #2a3a16,0 0 0 4px rgba(246,236,200,.75),0 3px 6px rgba(0,0,0,.45)}
+.mu-who .orb b{font-size:26px}
+#mu .rm{opacity:1;min-width:34px;height:34px;border-radius:17px;background:linear-gradient(180deg,#d4442a,#a01c0c);border:2px solid #20120a;color:#fff;box-shadow:0 3px 6px rgba(0,0,0,.55);right:30px;top:24px}
+#mu .rm:hover{filter:brightness(1.15)}
+#mu .rm svg{width:16px;height:16px;stroke-width:3}
+#mu .bk .rm{right:20px;top:18px}
+.rmbar{display:flex;align-items:center;gap:14px;margin-left:auto;margin-right:14px;padding:6px 8px 6px 18px;border:2px solid #20120a;border-radius:24px;background:linear-gradient(180deg,#6a2a1a,#431508);color:#fbe9c8;font:italic 17px 'IM Fell English',serif;box-shadow:0 4px 8px rgba(0,0,0,.5)}
+.rmbar span{display:flex;align-items:center;gap:9px}
+.rmbar svg{width:18px;height:18px}
+#mu .rmdone{height:34px;padding:0 20px;border:2px solid #20120a;border-radius:17px;background:linear-gradient(180deg,#f2cf74,#c8923a);color:#2a1604;font:700 14px 'Cinzel',serif;cursor:pointer}
+#mu .rmdone:hover{filter:brightness(1.1)}
+#mu .rmopen{position:absolute;left:490px;top:236px;display:inline-flex;align-items:center;gap:8px;height:42px;padding:0 20px;border:2px solid #20120a;border-radius:21px;background:linear-gradient(180deg,#c24a30,#8a2a14);color:#fbe9c8;font:700 16px 'Cinzel',serif;letter-spacing:.04em;cursor:pointer;box-shadow:0 3px 6px rgba(0,0,0,.45);transition:filter .15s}
+#mu .rmopen:hover{filter:brightness(1.15)}
+#mu .rmopen svg{width:17px;height:17px;stroke-width:2.4}
+
+/* ===== levels: watched tick + progress bar ===== */
+#mu .yc .wk{position:absolute;left:16px;top:16px;z-index:2;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border:2px solid #20120a;border-radius:50%;background:rgba(40,24,10,.8);color:transparent;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.6);transition:background .15s,color .15s,transform .15s}
+#mu .yc .wk svg{width:19px;height:19px;stroke-width:3.4}
+#mu .yc .wk:hover{color:rgba(255,255,255,.55);transform:scale(1.1)}
+#mu .yc .wk.on{background:linear-gradient(180deg,#7fcf55,#4b9a38);color:#fff}
+#mu .yc.seen .yt img,#mu .yc.seen .yt .plph{filter:saturate(.5) brightness(.75)}
+.mu-prog{display:flex;align-items:center;gap:16px;margin:0 0 14px;padding:10px 20px;border:3px solid #20120a;border-radius:30px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 2px rgba(120,80,30,.35),0 5px 12px rgba(0,0,0,.5);color:#2b1708}
+.mu-prog .lv{font:700 16px 'Cinzel',serif;letter-spacing:.06em;color:#7a4a1c;white-space:nowrap}
+.mu-prog .bar{flex:1;height:14px;border:2px solid #20120a;border-radius:8px;background:rgba(60,30,6,.35);overflow:hidden;min-width:80px}
+.mu-prog .bar i{display:block;height:100%;background:linear-gradient(180deg,#ffe08a,#e0a030);box-shadow:0 0 8px rgba(255,200,70,.9);transition:width .35s}
+.mu-prog.done .bar i{background:linear-gradient(180deg,#9be070,#4b9a38);box-shadow:0 0 8px rgba(120,220,80,.8)}
+.mu-prog b{font:700 16px 'Cinzel',serif;white-space:nowrap}
+.mu-prog small{font:italic 16px 'IM Fell English',serif;color:#5c3a18;white-space:nowrap}
+#mu .yc .wk{left:32px;top:28px}
+#mu.over{z-index:170}
+#mu.frommap[data-screen=lobby]{background:transparent}
+#mu.frommap[data-screen=lobby] #mu-stage>*:not(#mu-modal):not(#mu-toast):not(#mu-drop){visibility:hidden}
+#mu.frommap[data-screen=lobby]{background:rgba(5,10,5,.45)}
+#mu.frommap[data-screen=lobby] .mu-blur{display:none}
+#mu.frommap[data-screen=lobby]{background:transparent}
+#mu.frommap[data-screen=lobby] #mu-stage{background:none}
+#mu.frommap[data-screen=lobby] #mu-modal{background:rgba(10,5,2,.62)}
+
+/* results header: only the Clear link is left */
+.bh.res{justify-content:flex-end}
+
+/* ===== Instagram reels: same box as the books, thumbnail on top, the creator's @username in place of a length ===== */
+.yg .bk.rl{min-width:0}
+.bk.rl .bc{width:54%;aspect-ratio:9/16;cursor:pointer;border-radius:6px}
+.bk.rl .bph svg{width:42%;height:42%;fill:none;stroke:#e8d3a2;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.bk.rl .rbadge{position:absolute;left:6px;bottom:6px;padding:1px 8px;border-radius:9px;background:rgba(40,16,4,.82);color:#f6e6b8;font:700 12px 'EB Garamond',serif;letter-spacing:.04em}
+.bk.rl .bt{cursor:pointer}
+.bk.rl .wk{position:absolute;left:24px;top:26px;z-index:3}
+.bk.rl.seen .bc{box-shadow:0 0 0 2px #6fd160,0 5px 10px rgba(0,0,0,.55)}
+#mu .pic-prev.reelpic{left:83px;top:224px;width:84px;height:136px;border:3px dashed #6a4426;border-radius:10px;background:#f6e8c4;display:flex;align-items:center;justify-content:center;overflow:hidden}
+#mu .pic-prev.reelpic img{width:100%;height:100%;object-fit:cover}
+
+/* watched tick on a reel box */
+#mu .bk.rl .wk{position:absolute;left:16px;top:16px;z-index:2;width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border:2px solid #20120a;border-radius:50%;background:rgba(40,24,10,.8);color:transparent;cursor:pointer;box-shadow:0 2px 5px rgba(0,0,0,.6);transition:background .15s,color .15s,transform .15s}
+#mu .bk.rl .wk svg{width:19px;height:19px;stroke-width:3.4}
+#mu .bk.rl .wk:hover{color:rgba(255,255,255,.55);transform:scale(1.1)}
+#mu .bk.rl .wk.on{background:linear-gradient(180deg,#7fcf55,#4b9a38);color:#fff}
+#mu .bk.rl.seen .yt img,#mu .bk.rl.seen .yt .plph{filter:saturate(.5) brightness(.75)}
+#mu .bk.rl .wk{left:32px;top:28px}
+#mu .bk.rl .wk{left:24px;top:26px}
+
+/* reels: just the picture; an empty space under it that becomes an input on double-click */
+.bg.rg{margin-top:2px}
+.yg + .bg.rg{margin-top:6px}
+.bk.rl .bph{background:rgba(120,90,50,.1)}
+.bk.rl .bph svg{stroke:#8a6a3a}
+.bk.rl .rbadge,.bk.rl .bpg{display:none}
+.bk.rl .bm{min-height:30px}
+.bk.rl .bt.rt{display:block;min-height:1.5em;cursor:text;text-align:center;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bk.rl .bt.rt:empty{cursor:text}
+.bk.rl .rt-in{width:100%;box-sizing:border-box;padding:2px 6px;font:inherit;font-weight:700;text-align:center;color:#2a1a0a;background:#fbf1d4;border:2px solid #6a4426;border-radius:5px;outline:none}
+.bk.rl .bt.rt{align-self:stretch;width:100%;min-height:1.6em}
+
+/* ===== reels: bigger, 4 in one row (the books keep their 6 per row) ===== */
+.bg.rg{grid-template-columns:repeat(4,1fr);gap:24px 20px;padding:4px 8px 34px}
+#mu .bk.rl .bc{width:66%}
+.bk.rl .bm{margin-top:14px}
+.bk.rl .bt.rt{font-size:18px}
+.bk.rl .rt-in{font-size:17px}
+
+/* ===== folders: the folder level beside the castle (a creator-style page whose "books" are folders) ===== */
+#mu[data-screen=folders] .mu-wall{inset:0;filter:none;background:linear-gradient(rgba(4,10,4,.62),rgba(4,10,4,.7)),url(museum/ui/bg_books.jpg) center/100% 100% no-repeat}
+#mu-body.folders{top:112px;left:30px;right:30px;bottom:12px}
+#mu .ab.nf{width:176px;height:60px;margin-top:11px;background-image:url(museum/ui/add_btn.png);color:var(--cream)}
+#mu .ab.nf .t{inset:0;font-size:18px;text-shadow:0 1px 2px rgba(0,0,0,.6)}
+#mu .ab.nf .t svg{width:18px;height:18px;stroke-width:3}
+/* page heading */
+.fo-head{display:flex;flex-direction:column;align-items:center;margin:2px 0 18px}
+.fo-ban{display:flex;align-items:center;justify-content:center;width:400px;height:102px;background:url(museum/ui/heading_plain.png) center/100% 100% no-repeat;filter:drop-shadow(0 5px 6px rgba(0,0,0,.4))}
+.fo-ban b{font:700 34px/1 'Cinzel',serif;letter-spacing:.05em;color:#3a1f08;text-shadow:0 1px 0 rgba(255,245,210,.6)}
+.fo-head p{margin:10px 0 0;font:italic 21px 'IM Fell English',serif;color:#f3e1b4;text-shadow:0 2px 4px #000;text-align:center}
+/* folder cards: the same parchment box as the books, at the same size */
+.bg.fg{grid-template-columns:repeat(6,1fr)}
+.bk.fd{cursor:pointer}
+#mu .bc.fdv{position:relative;display:block;width:62%;aspect-ratio:2/3;overflow:visible;border-radius:0;background:none;box-shadow:none}
+#mu .bc.fdv:hover{filter:none}
+.fd:hover .fsv{filter:drop-shadow(0 5px 4px rgba(0,0,0,.4)) brightness(1.06)}
+.fsv{position:absolute;inset:0;width:100%;height:100%;display:block;overflow:visible;filter:drop-shadow(0 4px 3px rgba(0,0,0,.35));transition:filter .15s}
+.fth{position:absolute;inset:0;display:block;pointer-events:none}
+.fth img{position:absolute;inset:auto;top:12.500%;width:38%;height:23%;object-fit:cover;border:2px solid #f6e8c4;border-radius:2px;background:#3a2410;box-shadow:0 2px 4px rgba(0,0,0,.5);transition:transform .2s}
+.fd:hover .fth img{margin-top:-5px}
+.fd .fsub{font:italic 15px/1.2 'IM Fell English',serif;color:#6a4a26}
+.bk.fd.drop{transform:translateY(-5px) scale(1.04);filter:drop-shadow(0 0 16px #f2cf74) drop-shadow(0 0 5px #f2cf74)}
+#mu .fd.nw .bc.fdv{display:flex;align-items:center;justify-content:center;border:3px dashed rgba(122,78,36,.65);border-radius:12px;background:rgba(160,112,52,.1)}
+.fd.nw .plus svg{width:50px;height:50px;fill:none;stroke:#8a5a24;stroke-width:2;stroke-linecap:round;transition:transform .2s}
+.fd.nw:hover .plus svg{transform:rotate(90deg) scale(1.12)}
+/* an opened folder: title pill in place of the Videos / Books tabs */
+.fo-tt{display:flex;align-items:center;gap:14px;height:52px;padding:0 28px 0 16px;border:3px solid #20120a;border-radius:30px;background:linear-gradient(180deg,#ead5a5,#d2b072);box-shadow:inset 0 0 0 2px rgba(120,80,30,.35),0 5px 12px rgba(0,0,0,.5);white-space:nowrap}
+.fo-ic{display:flex}.fo-ic svg{width:30px;height:30px;fill:#c89a52;stroke:#4a2a12;stroke-width:1.8;stroke-linejoin:round}
+.fo-tt b{font:700 25px 'Cinzel',serif;color:#3a1f08;max-width:520px;overflow:hidden;text-overflow:ellipsis}
+.fo-tt em{font:italic 19px 'IM Fell English',serif;color:#6a4a26}
+/* new / edit folder card (uses the same parchment modal as a creator) */
+#mu .paper-card.fmodal .fcols{position:absolute;left:50px;top:228px;display:flex;gap:18px}
+#mu .fcol{width:46px;height:46px;padding:0;border:3px solid #20120a;border-radius:50%;background:linear-gradient(135deg,var(--fa),var(--fb));box-shadow:0 3px 5px rgba(0,0,0,.4),inset 0 2px 0 rgba(255,255,255,.35);cursor:pointer;transition:transform .15s,box-shadow .15s}
+#mu .fcol:hover{transform:translateY(-2px) scale(1.06)}
+#mu .fcol.on{box-shadow:0 0 0 3px #f6e8c4,0 0 0 6px #3a1f08,0 4px 8px rgba(0,0,0,.45)}
+#mu .paper-card .fhint{position:absolute;left:50px;top:304px;font:italic 18px/1.3 'IM Fell English',serif;color:var(--ink2)}
+
+/* ===== reels inside a folder: double-click the invisible top-right corner to flip the box over; the back is a completely blank page to write on ===== */
+.rlf{position:relative;perspective:1500px;filter:drop-shadow(0 6px 7px rgba(0,0,0,.45));transition:transform .15s}
+.rlf:hover{transform:translateY(-3px)}
+.rli{position:relative;transform-style:preserve-3d;transition:transform .85s cubic-bezier(.45,.05,.2,1)}
+.rlf.flipped .rli{transform:rotateY(180deg)}
+.rlf .bk{filter:none;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.rlf .bk:hover{transform:none}
+.rlf .bk.rb{position:absolute;inset:0;transform:rotateY(180deg);padding:48px 36px 46px;box-sizing:border-box;display:block}
+.rnote{display:block;width:100%;height:100%;box-sizing:border-box;margin:0;padding:0;border:0;outline:0;resize:none;background:transparent;color:#3a1f08;caret-color:#6a3f16;font:italic 21px/1.5 'IM Fell English','EB Garamond',Georgia,serif;scrollbar-width:thin;scrollbar-color:#b58a4a transparent}
+.rnote::selection{background:rgba(190,140,60,.35)}
+.fhot{position:absolute;top:6px;right:6px;width:52px;height:52px;z-index:1;background:transparent;border:0;padding:0}
+.rlf .bk .rm{z-index:3}
+.rlf .rli{height:100%}.rlf .rli>.bk{height:100%;box-sizing:border-box}
+
+/* the same flip for YouTube videos in a folder */
+.rlf .yc{filter:none;-webkit-backface-visibility:hidden;backface-visibility:hidden}
+.rlf .yc:hover{transform:none}
+.rlf .yc.rb{position:absolute;inset:0;transform:rotateY(180deg);padding:46px 42px 42px;box-sizing:border-box;display:block}
+.rlf .rli>.yc{height:100%;box-sizing:border-box}
+.rlf .yc .fhot{top:0;right:0;width:46px;height:40px}
+.rlf .yc .rm{z-index:3}
+
+/* ===== Media Log (the folders page): the banner picture on top, tabs inside a folder ===== */
+.fo-head{margin:0 0 14px}
+.fo-ban-img{display:block;width:min(700px,84%);height:auto;margin:0 auto;filter:drop-shadow(0 5px 6px rgba(0,0,0,.4));-webkit-user-select:none;user-select:none;pointer-events:none}
+.fo-tabs{display:flex;align-items:center;gap:12px;margin:10px 0 0 8px}
+#mu svg.fsv{width:100%;height:100%}   /* the folder picture was being squeezed to icon size by the general "#mu svg" rule above */
+
+/* the little name pill inside an opened folder (name + counts) is gone */
+#mu .fo-tt{display:none}
+/* photos dropped into a folder */
+.bk.rl.ph .bc{cursor:zoom-in;background:#2a1a0d}
+.bk.rl.ph .bc img{object-fit:cover}
+.bk.rl.ph .bt{cursor:default}
+#mu .ph-view{position:absolute;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;background:rgba(10,6,2,.82);cursor:zoom-out}
+#mu .ph-view img{max-width:86%;max-height:88%;border:4px solid #20120a;border-radius:8px;box-shadow:0 12px 40px rgba(0,0,0,.7)}
+
+/* the New creator form over the world map: one dark overlay over the whole screen (the sides too), not only the 1671x941 stage */
+#mu.frommap[data-screen=lobby]:has(#mu-modal.on){background:rgba(10,5,2,.62)}
+#mu.frommap[data-screen=lobby]:has(#mu-modal.on) #mu-modal{background:transparent}
+
+/* ===== folder photos: shown exactly as they are, nothing cropped ===== */
+/* the picture box takes the real shape of the photo (landscape = wide box, vertical = tall box); the same box frame as books and reels is used */
+.bg.rg{align-items:start}
+#mu .bk.rl.ph .bc{width:66%;aspect-ratio:var(--ar,3/4);border-radius:4px;background:rgba(40,22,8,.28);cursor:zoom-in}
+#mu .bk.rl.ph.sq .bc{width:72%}
+#mu .bk.rl.ph.land .bc{width:84%}
+#mu .bk.rl.ph .bc img{object-fit:contain;image-rendering:auto}
+/* a photo that is small in pixels turns blurry when blown up: it goes in the small box and is never stretched */
+#mu .bk.rl.ph.lo .bc{width:42%}
+#mu .bk.rl.ph.lo.sq .bc{width:46%}
+#mu .bk.rl.ph.lo.land .bc{width:58%}
+/* the title under the photo can be changed (double-click it) */
+#mu .bk.rl.ph .bt.rt{cursor:text}
+/* the big view: a sharp photo fills the screen whole; a small one stays at its real size */
+#mu .ph-view img{width:auto;height:auto;max-width:92%;max-height:92%;object-fit:contain}
+#mu .ph-view.lo img{max-width:60%;max-height:60%}

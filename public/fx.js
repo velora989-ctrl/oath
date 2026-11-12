@@ -25,6 +25,15 @@
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const safe = fn => { try { return fn(); } catch (e) { console.warn('[fx]', e); } };
   const easeOut = k => 1 - Math.pow(1 - k, 3);
+  /* ---- TUNING: the only place to change the overall feel (code constants, not a setting in the game) ---- */
+  const COARSE = !!(window.matchMedia && matchMedia('(pointer:coarse)').matches);
+  const TUNE = {
+    master: .85,                       /* overall volume of every sound effect (0 - 1) */
+    ambient: .05,                      /* volume of the world-map wind / birds / crickets (keep well below the UI sounds) */
+    particles: COARSE ? 320 : 700,     /* most particles alive at once (phones get fewer) */
+    ambienceFade: 1.5,                 /* seconds the ambience takes to fade in / out */
+    voices: 48                         /* when more sounds than this are playing, the tiny ones (hover, ticks) are skipped */
+  };
 
   /* The page's own state lives in top-level `let` variables of the main script (visible to this script by name).
      They are read through small accessors so a missing one can never throw. */
@@ -58,7 +67,7 @@
       ctx = new AC();
       const comp = ctx.createDynamicsCompressor();
       comp.threshold.value = -16; comp.knee.value = 18; comp.ratio.value = 5; comp.attack.value = .004; comp.release.value = .18;
-      master = ctx.createGain(); master.gain.value = muted ? 0 : .85;
+      master = ctx.createGain(); master.gain.value = muted ? 0 : TUNE.master;
       master.connect(comp); comp.connect(ctx.destination);
       nbuf = ctx.createBuffer(1, ctx.sampleRate * 2, ctx.sampleRate);
       const d = nbuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
@@ -72,6 +81,7 @@
       unlocked = true;
       if (!ctx && !build()) return;
       if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+      if (ambWant) setTimeout(() => safe(ambSync), 0);
     }
 
     const envG = (t, a, h, d, v) => {
@@ -146,7 +156,7 @@
       cell() { tone({ f: rnd(640, 700), to: 900, type: 'triangle', d: .07, v: .11 }); noise({ f: 3000, q: 2, d: .02, v: .04 }); },
       whoosh() { whoosh(.12, .34); },
       card() { whoosh(.09, .22); pl(79, .05, .12, .2); pl(86, .12, .1, .3); },
-      step(i) { noise({ type: 'lowpass', f: 760, q: .7, d: .06, v: .12 }); noise({ type: 'highpass', f: 3800, a: .012, d: .07, v: .035 }); tone({ f: (i & 1) ? 138 : 164, to: 68, d: .075, v: .11 }); },
+      step(i) { noise({ type: 'lowpass', f: 760, q: .7, d: .06, v: .12 }); noise({ type: 'highpass', f: 3800, a: .012, d: .07, v: .035 }); tone({ f: ((i & 1) ? 138 : 164) * rnd(.93, 1.07), to: 68, d: .075, v: .11 }); },
       arrive() { bell(88, 0, .07, .7, .45); pl(81, .02, .08, .2); },
       cmd() { tone({ f: 392, to: 660, type: 'triangle', d: .12, v: .12 }); tone({ f: 990, d: .1, v: .05, t: .06 }); },
       undo() { tone({ f: 720, to: 340, type: 'triangle', d: .13, v: .12 }); tone({ f: 540, to: 260, type: 'triangle', d: .14, v: .1, t: .07 }); whoosh(.05, .2); },
@@ -178,17 +188,97 @@
         [48, 55, 60, 64, 67, 72].forEach((m, i) => tone({ f: N(m), type: 'triangle', a: .06, d: 1.3, v: .07, t: .08 + i * .06, wet: .5 }));
         for (let i = 0; i < 9; i++) bell(pick([84, 88, 91, 93, 96]), .3 + i * .09, .05, .8, .5);
       },
-      logout() { [72, 67, 64, 60].forEach((m, i) => pl(m, i * .09, .12, .3, 'triangle', .3)); }
+      logout() { [72, 67, 64, 60].forEach((m, i) => pl(m, i * .09, .12, .3, 'triangle', .3)); },
+
+      /* ---- round 2: the museum, the folders, the world map and the ambience (all cozy: wood, paper, leaves, bells) ---- */
+      hoverSoft() { tone({ f: rnd(1180, 1320), to: 1520, d: .05, v: .02 }); },
+      press() { tone({ f: 330 * rnd(.96, 1.05), to: 190, type: 'triangle', d: .06, v: .12 }); noise({ f: 1800, q: 2, d: .02, v: .035 }); },
+      paperSlip() { noise({ type: 'bandpass', f: 2600, to: 900, q: .7, a: .01, d: .14, v: .09 }); noise({ type: 'highpass', f: 6000, a: .01, d: .08, v: .025, t: .03 }); },
+      pageTurn() { flip(.12, .26); tone({ f: 150, to: 100, d: .12, v: .05, t: .14 }); },
+      openFolder() { flip(.1, .18); tone({ f: 196, to: 262, type: 'triangle', d: .18, v: .07, t: .05 }); pl(79, .12, .08, .25); },
+      closeFolder() { flip(.08, .14); tone({ f: 262, to: 174, type: 'triangle', d: .16, v: .08 }); },
+      dropIn() { noise({ type: 'lowpass', f: 520, d: .08, v: .15 }); tone({ f: 150, to: 80, d: .1, v: .15 }); pl(84, .05, .09, .2, 'triangle', .3); noise({ type: 'highpass', f: 5200, a: .01, d: .14, v: .03, t: .04 }); },
+      stamp() { tone({ f: 110, to: 55, d: .12, v: .18 }); noise({ type: 'lowpass', f: 700, d: .07, v: .13 }); pl(79, .06, .08, .2, 'triangle', .3); },
+      tickUp(k) { const m = 72 + Math.round(Math.max(0, Math.min(1, k || 0)) * 14); bell(m, 0, .07, .5, .4); pl(m + 7, .06, .05, .2, 'triangle', .3); },
+      lockRattle() {
+        for (let i = 0; i < 5; i++) { tone({ f: rnd(170, 240), type: 'square', d: .03, v: .035, lp: 900, t: i * .05 }); noise({ type: 'bandpass', f: rnd(2800, 3600), q: 4, d: .02, v: .045, t: i * .05 }); }
+        tone({ f: 110, to: 70, d: .12, v: .1, t: .27 });
+      },
+      unlock() {
+        tone({ f: 900, to: 1500, d: .05, v: .05 }); noise({ f: 2600, q: 3, d: .03, v: .07 }); noise({ type: 'lowpass', f: 400, d: .1, v: .08, t: .02 });
+        bell(88, .1, .08, .9, .5); [76, 81, 84, 88].forEach((m, i) => pl(m, .14 + i * .06, .09, .3, 'triangle', .4)); noise({ type: 'highpass', f: 6000, a: .05, d: .4, v: .03, t: .2 });
+      },
+      ringBurst() { whoosh(.07, .28); bell(84, .04, .05, .5, .5); },
+      trailLight(i) { bell(72 + ((i || 0) % 8) * 2, 0, .05, .4, .45); },
+      fanfare() {
+        noise({ type: 'bandpass', f: 300, to: 4800, q: .7, a: .3, d: .1, v: .07 });
+        [72, 76, 79].forEach((m, i) => brass(m, .22 + i * .1, .08, .045)); [76, 79, 84].forEach(m => brass(m, .55, .45, .04));
+        tone({ f: N(48), type: 'triangle', h: .4, d: .45, v: .1, t: .55, wet: .3 });
+        for (let i = 0; i < 7; i++) bell(pick([84, 88, 91, 93, 96]), .6 + i * .08, .04, .5, .5);
+      },
+      cardFlipBack() { flip(.1, .16); tone({ f: 420, to: 300, type: 'triangle', d: .09, v: .06 }); },
+      penTick() { noise({ type: 'bandpass', f: rnd(3200, 4200), q: 4, d: .012, v: .022 }); tone({ f: rnd(520, 640), to: 380, d: .02, v: .01 }); },
+      swish() { noise({ type: 'bandpass', f: 500, to: 3600, q: .8, a: .03, d: .18, v: .07 }); },
+      poof() { noise({ type: 'lowpass', f: 900, to: 200, d: .25, v: .13 }); tone({ f: 260, to: 90, d: .12, v: .07 }); noise({ type: 'highpass', f: 6000, a: .02, d: .15, v: .025, t: .03 }); },
+      thud() { tone({ f: 95, to: 42, d: .22, v: .2 }); noise({ type: 'lowpass', f: 300, d: .12, v: .15 }); },
+      shimmer() { [88, 91, 95, 98].forEach((m, i) => bell(m, i * .06, .04, .7, .6)); noise({ type: 'highpass', f: 6500, a: .1, d: .5, v: .022 }); },
+      bird() { const f0 = rnd(2500, 3400); for (let j = 0; j < 3; j++) tone({ f: f0 * rnd(.95, 1.08), to: f0 * rnd(1.25, 1.5), d: .07, v: .016, t: j * .1, wet: .35, vib: [28, 55] }); },
+      cricket() { for (let i = 0; i < 4; i++) tone({ f: 4300 * rnd(.97, 1.03), d: .03, v: .007, t: i * .055 }); }
     };
-    const LOW = { hover: 1, type: 1, step: 1, ping: 1 };
+    const LOW = { hover: 1, hoverSoft: 1, type: 1, penTick: 1, step: 1, ping: 1, press: 1, trailLight: 1, tickUp: 1, bird: 1, cricket: 1, swish: 1 };
+    const COOL = { hover: 50, hoverSoft: 70, penTick: 85, press: 40, swish: 140, bird: 1500, cricket: 1500, dropIn: 120, stamp: 80 };   /* never the same sound twice within this many ms */
+    const lastAt = {};
 
     function play(name, a) {
       if (muted || !unlocked || !S[name]) return;
       if (!ctx && !build()) return;
       if (ctx.state !== 'running') { ctx.resume && ctx.resume().catch(() => {}); return; }
-      if (active > 48 && LOW[name]) return;
+      if (active > TUNE.voices && LOW[name]) return;
+      if (active > TUNE.voices + 16 && name !== 'levelUp' && name !== 'fanfare') return;
+      const now = performance.now();
+      if (COOL[name] && now - (lastAt[name] || 0) < COOL[name]) return;
+      lastAt[name] = now;
       safe(() => S[name](a));
     }
+    const since = name => performance.now() - (lastAt[name] || -1e9);      /* ms since a sound last played (lets other code avoid doubling up) */
+
+    /* ---- AMBIENCE: a very quiet wind bed, sparse distant birds and soft crickets (the world map only; follows mute, fades, pauses with the tab) ---- */
+    let ambWant = false, amb = null, ambLevel = 1, ambT = 0;
+    function ambStart() {
+      if (amb || !ctx) return;
+      const src = ctx.createBufferSource(); src.buffer = nbuf; src.loop = true;
+      const bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 520; bp.Q.value = .55;
+      const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 140;
+      const gust = ctx.createGain(); gust.gain.value = .6;
+      const lf = ctx.createOscillator(), lg = ctx.createGain(); lf.frequency.value = .09; lg.gain.value = .35; lf.connect(lg); lg.connect(gust.gain);           /* slow gusts */
+      const lf2 = ctx.createOscillator(), lg2 = ctx.createGain(); lf2.frequency.value = .05; lg2.gain.value = 180; lf2.connect(lg2); lg2.connect(bp.frequency);   /* the wind's tone drifts */
+      const ag = ctx.createGain(); ag.gain.value = 0.0001;
+      src.connect(bp); bp.connect(hp); hp.connect(gust); gust.connect(ag); ag.connect(master);
+      src.start(0, Math.random() * 1.5); lf.start(); lf2.start();
+      ag.gain.setTargetAtTime(TUNE.ambient * ambLevel, ctx.currentTime, TUNE.ambienceFade / 3);
+      amb = { src, lf, lf2, ag };
+      const next = () => {                                                       /* a bird every few seconds, crickets in between */
+        ambT = setTimeout(() => {
+          if (!amb) return;
+          if (!muted && ctx.state === 'running' && !document.hidden) safe(() => (Math.random() < .55 ? play('bird') : play('cricket')));
+          next();
+        }, rnd(2600, 7500));
+      };
+      next();
+    }
+    function ambStop() {
+      clearTimeout(ambT); ambT = 0;
+      const a = amb; if (!a) return; amb = null;
+      try { a.ag.gain.setTargetAtTime(0.0001, ctx.currentTime, TUNE.ambienceFade / 4); } catch (e) {}
+      setTimeout(() => { try { a.src.stop(); a.lf.stop(); a.lf2.stop(); } catch (e) {} }, TUNE.ambienceFade * 1000 + 200);
+    }
+    function ambSync() {
+      if (ambWant && !muted && unlocked && !document.hidden && (ctx || build())) { if (ctx.state === 'suspended') ctx.resume().catch(() => {}); ambStart(); }
+      else ambStop();
+    }
+    document.addEventListener('visibilitychange', () => safe(ambSync));
+    const ambience = on => { ambWant = !!on; safe(ambSync); };
+    const duck = lv => { ambLevel = lv; if (amb && ctx) amb.ag.gain.setTargetAtTime(TUNE.ambient * ambLevel, ctx.currentTime, .25); };
 
     /* "Analysing..." while the journal is being scored: soft magical bubbling */
     let anaT = null, anaI = 0;
@@ -209,12 +299,13 @@
     function setMuted(m) {
       muted = !!m;
       try { localStorage.setItem('grove.mute', muted ? '1' : '0'); } catch (e) {}
-      if (master) master.gain.setTargetAtTime(muted ? 0 : .85, ctx.currentTime, .03);
+      if (master) master.gain.setTargetAtTime(muted ? 0 : TUNE.master, ctx.currentTime, .03);
       if (muted) analyse(false);
       else { unlock(); play('pop'); }
+      safe(ambSync);
       paintSound();
     }
-    return { play, unlock, analyse, setMuted, isMuted: () => muted };
+    return { play, unlock, analyse, setMuted, isMuted: () => muted, ambience, duck, since };
   })();
 
   /* first user gesture unlocks audio (browsers require it) */
@@ -229,7 +320,7 @@
   const g = fxc.getContext('2d');
 
   const parts = [], partsA = [];
-  const addP = (o, list) => { list = list || parts; if (list.length < 700) list.push(Object.assign({ life: 0, max: 1, x: 0, y: 0, vx: 0, vy: 0, g: 0, drag: 0, rot: 0, vr: 0 }, o)); };
+  const addP = (o, list) => { list = list || parts; if (list.length < TUNE.particles) list.push(Object.assign({ life: 0, max: 1, x: 0, y: 0, vx: 0, vy: 0, g: 0, drag: 0, rot: 0, vr: 0 }, o)); };
   const CONF = ['#6fbf5a', '#f2c94c', '#e0604c', '#f7edd6', '#5aa6d6', '#c690e0', '#ff9f5a'];
 
   function glow(c, x, y, r, rgb, a) {
@@ -509,7 +600,7 @@
   function drawMarker(t) {
     if (!mark || !G.path().length) { mark = null; return; }
     const q = G.quad(mark.dst[0], mark.dst[1]), c = G.center(mark.dst[0], mark.dst[1]);
-    const k = (t * 1.5) % 1, s = .55 + .5 * k;
+    const k = (t * 1.5) % 1, s = 1.12 - .55 * k;
     g.globalAlpha = (1 - k) * .85; g.beginPath();
     q.forEach((pt, j) => { const x = c[0] + (pt[0] - c[0]) * s, y = c[1] + (pt[1] - c[1]) * s; j ? g.lineTo(x, y) : g.moveTo(x, y); });
     g.closePath(); g.lineWidth = 3; g.strokeStyle = '#fff'; g.stroke(); g.globalAlpha = 1;
@@ -864,6 +955,6 @@
   const sa = $('#fxsnda'); const syncSa = () => { sa.style.display = authOn ? 'flex' : 'none'; };
   syncSa(); if (auth) new MutationObserver(syncSa).observe(auth, { attributes: true, attributeFilter: ['style'] });
 
-  window.GroveFX = { titleDone, sound: SND, burst: sparkBurst, confetti, levelUp: levelFX, quest: questFX };
+  window.GroveFX = { titleDone, sound: SND, burst: sparkBurst, confetti, levelUp: levelFX, quest: questFX, tune: TUNE };
   requestAnimationFrame(loop);
 })();

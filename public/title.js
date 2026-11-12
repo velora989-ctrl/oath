@@ -12,7 +12,11 @@
   if (!T) return;
   const state = window.GroveTitle = { done: false, ready: false };
   /* Fullscreen: browsers only allow it straight from a key press / click, so it is requested the moment the player presses */
+  /* Fullscreen only starts by itself on phones; on a computer the player uses the Fullscreen button (under Log out) */
+  const isPhone = /Android|iPhone|iPad|iPod|Mobile|Mobi/i.test(navigator.userAgent || '') ||
+    (!!(window.matchMedia && matchMedia('(pointer: coarse)').matches) && Math.min(screen.width, screen.height) <= 900);
   const enterFS = () => {
+    if (!isPhone) return;
     try {
       const d = document, el = d.documentElement;
       if (d.fullscreenElement || d.webkitFullscreenElement) return;

@@ -16,6 +16,8 @@ const app = express();
 app.use(cors());
 // a board can hold up to 40 written papers, so its route gets a bigger body limit (must come before the global parser)
 app.use('/api/board', express.json({ limit: '2mb' }));
+// a museum can hold a few hundred saved videos
+app.use('/api/museum', express.json({ limit: '8mb' }));   // folders can hold many reel pictures; 1 MB was too small and the save failed quietly
 app.use(express.json({ limit: '50kb' }));
 
 // slow down password guessing
@@ -28,12 +30,17 @@ app.use('/api/emojis', require('./routes/emojis'));
 app.use('/api/characters', require('./routes/characters'));
 app.use('/api/archetypes', require('./routes/archetypes'));
 app.use('/api/board', require('./routes/board'));
+app.use('/api/calendar', require('./routes/calendar'));
+app.use('/api/museum', require('./routes/museum'));
+app.use('/api/bosses', require('./routes/bosses'));
+app.use('/api/names', require('./routes/names'));
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 // Optional: serve the frontend from the same server (set STATIC_DIR in .env)
 const staticDir = process.env.STATIC_DIR || path.join(__dirname, 'public');
-app.use(express.static(staticDir));
+/* html/js/css are always revalidated, so a redeploy shows up on the next page load instead of a stale cached copy */
+app.use(express.static(staticDir, { setHeaders: (res, p) => { if (/\.(html|js|css)$/i.test(p)) res.setHeader('Cache-Control', 'no-cache'); } }));
 
 app.use('/api', (req, res) => res.status(404).json({ error: 'Not found' }));
 

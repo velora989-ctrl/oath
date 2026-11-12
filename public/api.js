@@ -71,6 +71,28 @@
     saveBoard: (boardId, papers) => request('PUT', `/api/board/b/${boardId}`, { papers }),
     renameBoard: (boardId, name) => request('PUT', `/api/board/b/${boardId}`, { name }).then((d) => d.board),
     deleteBoard: (boardId) => request('DELETE', `/api/board/b/${boardId}`),
+    // the Holidays tab: your own changes to the school calendar. getHolidays() -> [{ d: 'YYYY-MM-DD', h: 1|2|0, n }]; saveHolidays(list) replaces them.
+    // (Named differently from getCalendar(id, month) above, which is the journal's calendar: two methods with the same name overwrote each other.)
+    getHolidays: () => request('GET', '/api/calendar').then((d) => d.days),
+    saveHolidays: (days) => request('PUT', '/api/calendar', { days }).then((d) => d.days),
+    // the Day Book's to-dos and notes: getCalNotes() -> [{ d, n, t: [{ x, d }] }]; saveCalNotes(list) replaces them
+    getCalNotes: () => request('GET', '/api/calendar/notes').then((d) => d.notes),
+    saveCalNotes: (notes) => request('PUT', '/api/calendar/notes', { notes }).then((d) => d.notes),
+    // the Creators Museum (Patch button): your own creators, videos and timestamps. getMuseum() -> [creator]; saveMuseum(list) replaces them.
+    // museumInfo(videoId) -> { title, author, dur, chapters }; museumPlaylist(listId) -> { title, items } (needs YOUTUBE_API_KEY on the server)
+    getMuseum: () => request('GET', '/api/museum').then((d) => d.creators),
+    saveMuseum: (creators) => request('PUT', '/api/museum', { creators }),
+    // the Bosses button: your goals as bosses and the Hall of Fame. getBosses() -> { list, hall }; saveBosses({ list, hall }) replaces them
+    getBosses: () => request('GET', '/api/bosses'),
+    saveBosses: (data) => request('PUT', '/api/bosses', data),
+    // look at another player's bosses (read-only): getPlayerBosses(playerId) -> { list, hall }
+    getPlayerBosses: (id) => request('GET', `/api/bosses/player/${id}`),
+    // reel & video folders (the folder level next to the castle on the level map): getFolders() -> [folder]; saveFolders(list) replaces them
+    getFolders: () => request('GET', '/api/museum/folders').then((d) => d.folders),
+    saveFolders: (folders) => request('PUT', '/api/museum/folders', { folders }),
+    museumInfo: (id) => request('GET', `/api/museum/info/${id}`),
+    museumPlaylist: (id) => request('GET', `/api/museum/playlist/${id}`),
+    museumReel: (code) => request('GET', `/api/museum/reel/${code}`),
     // pin a picture: upload the (already shrunk) image, get its id back
     async uploadBoardImage(blob) {
       const res = await fetch(API_BASE + '/api/board/images', {
@@ -82,6 +104,19 @@
       if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
       return data;
     },
+    // folder photos: the ORIGINAL file is uploaded untouched and shown exactly as it is
+    async uploadMuseumPhoto(file) {
+      const res = await fetch(API_BASE + '/api/museum/photos', {
+        method: 'POST',
+        headers: { 'Content-Type': file.type || 'application/octet-stream', Authorization: `Bearer ${getToken()}` },
+        body: file,
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || `Upload failed (${res.status})`);
+      return data;
+    },
+    museumPhotoUrl: (id) => `${API_BASE}/api/museum/photos/${id}`,
+    deleteMuseumPhoto: (id) => fetch(API_BASE + `/api/museum/photos/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } }).catch(() => {}),
     boardImageUrl: (id) => `${API_BASE}/api/board/images/${id}`,
   };
 })();

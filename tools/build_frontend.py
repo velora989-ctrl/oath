@@ -85,7 +85,14 @@ s = frontend_cards.apply(s)
 
 # 6. game feel: animations (public/fx.css) + synthesized sounds and particles (public/fx.js), loaded last
 s = lit1('</style></head>', '</style>\n<link rel="stylesheet" href="fx.css">\n<link rel="stylesheet" href="board.css"></head>', s)
-s = lit1('</script></body></html>', '</script>\n<script src="fx.js"></script>\n<script src="vintage.js"></script>\n<script src="board.js"></script></body></html>', s)
+# 2c. the old "Undo" button opens the Holidays calendar (calendar.js + calendar-data.js from the school planner)
+s = lit1('<link rel="stylesheet" href="board.css"></head>', '<link rel="stylesheet" href="board.css">\n<link rel="stylesheet" href="calendar.css">\n<link rel="stylesheet" href="museum.css?v=6">\n<link rel="stylesheet" href="worldmap.css?v=1"></head>', s)
+s = lit1("u:'Undo',e:'Fullscreen'", "u:'Holidays',p:'Creators Museum',e:'Fullscreen'", s)
+s = lit1('["Undo", 1262, 1296, 796, 10]', '["Holidays", 1252, 1312, 796, 10]', s)
+# 2d. the "Patch" panel (bottom left) becomes a button that opens the Creators Museum (museum.js); it looks exactly the same
+s = lit1("[1333,484,117,65,'g']].forEach(", "[1333,484,117,65,'g'],[18,650,204,158,'p']].forEach(", s)
+s = lit1("if(k==='u'){if(!hist.length)return;", "if(k==='p'&&window.openMuseum){window.openMuseum()}else if(k==='u'&&window.openCalendar){window.openCalendar()}else if(k==='u'){if(!hist.length)return;", s)
+s = lit1('</script></body></html>', '</script>\n<script src="fx.js"></script>\n<script src="vintage.js"></script>\n<script src="board.js"></script>\n<script src="calendar-data.js"></script>\n<script src="calendar.js"></script>\n<script src="museum.js?v=6"></script>\n<script src="worldmap.js?v=1"></script></body></html>', s)
 
 # 7. start screen ("Press Any Button"): public/title.css, title.js, title.jpg
 s = lit1('<head>', '<head>' + '<link rel="preload" as="image" href="title.jpg"><link rel="stylesheet" href="title.css">', s)
