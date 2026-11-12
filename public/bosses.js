@@ -215,7 +215,7 @@ const st3=document.createElement('style');st3.textContent=`#bedit{display:none;l
 #bedit .be-h{display:flex;align-items:center;gap:8px;margin-bottom:4px;font-size:19px}#bedit .be-h b{font-size:24px;font-weight:400;-webkit-text-stroke:.3px #000;white-space:nowrap}#bedit .be-m{flex:1;min-width:0;font-size:16px;color:#5a4a2c;line-height:17px}
 #bedit .be-r{display:flex;align-items:center;gap:6px;min-height:34px;border-top:1px solid rgba(88,68,40,.35);flex-wrap:wrap;padding:2px 0}#bedit .be-n{width:130px;flex:none;font-size:18px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 #bedit button{display:inline-flex;align-items:center;gap:5px;padding:2px 10px;border:1.5px solid #20180d;border-radius:6px;background:#f7edd6;font:17px 'Patrick Hand','Comic Sans MS',cursive;color:#2b2a26;cursor:pointer}#bedit button:hover{background:#fff6dc}
-#bedit .be-c img{height:24px;width:auto;object-fit:contain}#bedit .be-c.on{background:#ffd23c;box-shadow:0 0 0 2px #20180d}#bedit .be-c.dn{opacity:.6}#bedit .be-bar{margin-left:auto}#bedit .be-mb{margin-left:0}#bedit .be-del{background:#f3d5cc;border-color:#7a2a1c;color:#7a2a1c}#bedit .be-del:hover{background:#eab9ac}#bedit .be-del.sure{background:#b5412f;color:#fff}`;document.head.appendChild(st3);
+#bedit .be-c img{height:24px;width:auto;object-fit:contain}#bedit .be-c.on{background:#ffd23c;box-shadow:0 0 0 2px #20180d}#bedit .be-c.dn{opacity:.6}#bedit .be-bar{margin-left:auto}#bedit .be-mb{margin-left:0}#bedit .be-del{background:#f3d5cc;border-color:#7a2a1c;color:#7a2a1c}#bedit .be-del:hover{background:#eab9ac}#bedit .be-del.sure{background:#b5412f;color:#fff}#bedit .be-kill{background:#e9b3a6;border-color:#4a1a10;color:#4a1a10;font-weight:700}#bedit .be-kill:hover{background:#dd9a8a}#bedit .be-kill.sure{background:#8f1f12;color:#fff}`;document.head.appendChild(st3);
 const tp=document.createElement('div');tp.id='btest';stage.appendChild(tp);
 const st4=document.createElement('style');st4.textContent=`#btest{display:none;left:1096px;top:526px;width:344px;box-sizing:border-box;padding:8px 12px 12px;border:1.5px solid #20180d;border-radius:10px;background:#eee0c6;box-shadow:inset 0 0 0 1.5px #fdfae7,inset 0 0 0 2.5px #cdbd9c,1px 2px 0 rgba(0,0,0,.35),0 8px 24px rgba(0,0,0,.45);color:#000;font-family:'Patrick Hand','Comic Sans MS',cursive;z-index:7;user-select:none}
 #btest .bt-h{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:6px}#btest .bt-h b{font-size:24px;font-weight:400;-webkit-text-stroke:.3px #000}#btest .bt-h span{font-size:14px;color:#6a5a3a}
@@ -225,6 +225,17 @@ const st4=document.createElement('style');st4.textContent=`#btest{display:none;l
 #btest .bt-hp{position:relative;height:26px;border:1.5px solid #20180d;border-radius:7px;background:#cfc0a0;overflow:hidden;margin-bottom:8px}#btest .bt-hp i{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(#a6e84a,#5aa82c);transition:width .25s}#btest .bt-hp span{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:19px;color:#14240b;text-shadow:0 1px 0 rgba(255,255,255,.6)}
 #btest .bt-g{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px}#btest .bt-d{background:#f3d5cc;border-color:#7a2a1c;color:#7a2a1c}#btest .bt-d:hover{background:#eab9ac}#btest .bt-u{background:#d9edc0;border-color:#2f5a1f;color:#2f5a1f}#btest .bt-u:hover{background:#c6e3a4}
 #btest .bt-f{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}#btest .bt-f button{font-size:17px;padding:3px 4px}#btest .bt-k{background:#f3d5cc;border-color:#7a2a1c;color:#7a2a1c}#btest .bt-k:hover{background:#eab9ac}#btest .bt-k.on{background:#c4442f;color:#fff}#bedit .be-tb{background:#d9edc0;border-color:#2f5a1f;color:#2f5a1f}#bedit .be-tb.on{background:#8ed23c;box-shadow:0 0 0 2px #20180d;color:#0f2a08}`;document.head.appendChild(st4);
+/* ---- Kill boss early: close every tab / overlay so the KO animation plays on a clear screen ---- */
+function closeAll(){
+ const call=f=>{try{if(typeof window[f]==='function')window[f]()}catch(e){}};
+ const vis=q=>{const e=document.querySelector(q);return e&&e.offsetParent!==null?e:null};
+ call('closeMuseum');call('closeCalendar');call('closeWorldMap');call('closeBoard');   /* Media Log, holidays, world map, Canvas (each ignores the call when it is not open) */
+ {const x=vis('#jcx');if(x)x.click()}{const x=vis('#jback');if(x)x.click()}              /* Journal calendar, then the Journal */
+ ['#tabpg','#imgpg'].forEach(q=>{const e=document.querySelector(q);if(e)e.style.display='none'});
+ if(HP.style.display==='block'){closeHall();stage.classList.remove('hall-ready')}        /* Hall of Fame */
+ ritStop();view='list';ask=null;err='';dr=null;pick=null;sel=null;P.style.display='none'; /* Bosses panel, ritual, New Boss form */
+ try{const a=document.activeElement;if(a&&a.blur)a.blur()}catch(e){}}
+function killBoss(id){eKill=0;eDel=0;closeAll();stopEdit(false);setTimeout(()=>{const x=bOf(id);if(x)setHP(x,0)},450)}
 function renderTest(){if(!editing||!eTest||!D.list.length){tp.style.display='none';return}
  if(!bOf(tSel))tSel=D.list[0].id;const b=bOf(tSel);
  let h='<div class="bt-h"><b>Test HP</b><span>only for testing animations</span></div>';
@@ -238,7 +249,7 @@ function testAct(k,b,d){const ent=ENT.find(e=>e.k==='cat'&&e.bs===b.id);if(!ent|
  else if(k==='th'||k==='full'){const am=Math.min(k==='full'?b.max:d,b.max-b.hp);if(am<=0){emsg=b.name+' is already at full HP.';return}b.hp+=am;FX.heal({style:st,amt:am,main:ent.o});emsg='Healed '+b.name+' +'+am+' HP.';save()}
  else if(k==='ko'){FX.previewDefeat({style:st,main:ent.o,ents});emsg='KO preview: nothing is deleted, the boss comes back in a moment.'}
  else if(k==='kill'){if(eKill!==b.id){eKill=b.id;emsg='Press Sure? to really defeat '+b.name+'. The Edit tab closes and the KO plays on a clear screen (the boss goes to the Hall of Fame).';return}
-  eKill=0;const id=b.id;stopEdit(false);setTimeout(()=>{const x=bOf(id);if(x)setHP(x,0)},450)}}
+  killBoss(b.id)}}
 tp.addEventListener('click',e=>{const a=e.target.closest('[data-t]');if(!a)return;const k=a.dataset.t;if(k!=='kill')eKill=0;if(k==='pick')tSel=+a.dataset.b;else{const b=bOf(tSel);if(b)testAct(k,b,+a.dataset.d)}renderEdit()});
 function okT(t){return Array.isArray(t)&&t.length===2&&TWK.has(t+'')}
 function lay(b){const S=BS[b.slot]||BS[0],p=b.pos||{};return{c:okT(p.c)?p.c:S.c,m:b.minis.map((_,i)=>okT(p.m&&p.m[i])?p.m[i]:S.m[i])}}
@@ -257,13 +268,15 @@ function renderEdit(){
  D.list.forEach(b=>{const td=tdOf(b);
   h+='<div class="be-r"><span class="be-n">'+esc(b.name)+'</span><button class="be-c'+(selIs('cat',b.id)?' on':'')+'" data-e="sel" data-k="cat" data-b="'+b.id+'"><img src="'+bImg(b)+'" alt="">Boss</button>';
   b.minis.forEach((m,i)=>{h+='<button class="be-c'+(selIs('mini',b.id,i)?' on':'')+(td.k.includes(i)?' dn':'')+'" data-e="sel" data-k="mini" data-b="'+b.id+'" data-i="'+i+'"><img src="'+mImg(b,i)+'" alt="">'+esc(m.n)+'</button>'});
-  h+='<button class="be-bar" data-e="bar" data-b="'+b.id+'" title="Change the HP bar shown above this boss on the map">HP bar: '+(b.bar==='classic'?'Classic':'New')+'</button><button class="be-bar be-mb" data-e="mbar" data-b="'+b.id+'" title="Change the HP bar shown above this boss\'s mini bosses">Mini bar: '+(b.mbar==='classic'?'Classic':'New')+'</button><button class="be-del'+(eDel===b.id?' sure':'')+'" data-e="del" data-b="'+b.id+'">'+(eDel===b.id?'Sure? Remove':'Remove boss')+'</button></div>'});
+  h+='<button class="be-bar" data-e="bar" data-b="'+b.id+'" title="Change the HP bar shown above this boss on the map">HP bar: '+(b.bar==='classic'?'Classic':'New')+'</button><button class="be-bar be-mb" data-e="mbar" data-b="'+b.id+'" title="Change the HP bar shown above this boss\'s mini bosses">Mini bar: '+(b.mbar==='classic'?'Classic':'New')+'</button><button class="be-del be-kill'+(eKill===b.id?' sure':'')+'" data-e="kill" data-b="'+b.id+'" title="Defeat this boss now: every tab closes and the KO animation plays on a clear screen">'+(eKill===b.id?'Sure? Kill':'Kill boss')+'</button><button class="be-del'+(eDel===b.id?' sure':'')+'" data-e="del" data-b="'+b.id+'">'+(eDel===b.id?'Sure? Remove':'Remove boss')+'</button></div>'});
  eb.innerHTML=h;renderTest()}
 function startEdit(){if(RO||!D.list.length)return;editing=true;esel=null;eh=null;pick=null;emsg='';P.style.display='none';eb.style.display='block';sync();renderEdit()}
 function stopEdit(open){editing=false;eKill=0;tp.style.display='none';esel=null;eh=null;eb.style.display='none';sync();if(open){view='list';ask=null;P.style.display='block';render()}}
 eb.addEventListener('click',e=>{const a=e.target.closest('[data-e]');if(!a)return;const k=a.dataset.e;
- if(k==='done'){stopEdit(true);return}
- if(k==='reset'){D.list.forEach(b=>{delete b.pos});emsg='Everyone is back on the default tiles.';save()}
+ if(k!=='kill')eKill=0;
+ if(k==='kill'){const id=+a.dataset.b,b=bOf(id);if(b){eDel=0;if(eKill!==id){eKill=id;emsg='Press Sure? Kill to defeat '+b.name+' now. Every tab closes and the KO animation plays (the boss goes to the Hall of Fame).'}else{killBoss(id);return}}}
+ else if(k==='done'){stopEdit(true);return}
+ else if(k==='reset'){D.list.forEach(b=>{delete b.pos});emsg='Everyone is back on the default tiles.';save()}
  else if(k==='del'){const id=+a.dataset.b,b=bOf(id);if(b){if(eDel!==id){eDel=id;emsg='Click again to remove '+b.name+' for good.'}else{eDel=0;D.list=D.list.filter(x=>x.id!==id);if(esel&&esel.b===id)esel=null;if(pick&&pick.b===id)pick=null;emsg='Removed '+b.name+'.';save();if(!D.list.length){stopEdit(true);return}}}}
  else if(k==='mbar'){const b=bOf(+a.dataset.b);if(b){b.mbar=b.mbar==='classic'?'new':'classic';emsg='Mini boss bar of '+b.name+': '+(b.mbar==='classic'?'Classic':'New')+'.';save()}}
  else if(k==='bar'){const b=bOf(+a.dataset.b);if(b){b.bar=b.bar==='classic'?'new':'classic';emsg='HP bar of '+b.name+': '+(b.bar==='classic'?'Classic':'New')+'.';save()}}
